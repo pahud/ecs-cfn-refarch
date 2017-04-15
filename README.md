@@ -7,6 +7,7 @@ This cloudformation template will provision common Amazon ECS infrastructure inc
 - Autoscaling Group and Launch Configuration
 - Lambda function as custom resource to query latest ECS AMI ID
 - ECS Service, Cluster, Task Definition
+- [Caddy](https://caddyserver.com/) as the default web server
 
 
 click the button to launch the demo stack in us-west-2
