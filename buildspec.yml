@@ -8,9 +8,11 @@ phases:
       - $(aws ecr get-login)
   build:
     commands:
+      - echo "building image with tag $(cat /tmp/build_tag.out)"
       - docker build --tag "$(cat /tmp/build_tag.out)" .
   post_build:
     commands:
+      - echo "pushing image to $(cat /tmp/build_tag.out)"
       - docker push "$(cat /tmp/build_tag.out)"
 artifacts:
   files: /tmp/build.json
