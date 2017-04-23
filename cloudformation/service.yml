@@ -25,7 +25,7 @@ Parameters:
   SpotPrice:
     Type: Number
     Description: spot price for spot instances
-    Default: 0
+    Default: 0.1
   ASGDesiredCapacity:
     Type: Number
     Description: instance count under AutoScalingGroup
@@ -192,7 +192,7 @@ Resources:
 
       Handler: "index.handler"
       Runtime: nodejs4.3
-      Timeout: 30
+      Timeout: 300
       Role: !GetAtt LambdaExecutionRole.Arn
 
 
