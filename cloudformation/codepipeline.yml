@@ -338,13 +338,13 @@ Resources:
                         #ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
                         ParameterOverrides: !Sub |
                           {
-                            "SpotPrice": "0.2",
-                            "ASGDesiredCapacity": "1",
+                            "SpotPrice": "0.1",
+                            "ASGDesiredCapacity": "2",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
-                            "ServiceDesiredCount": 1,
-                            "MaxPercent": 200,
-                            "MinPercent": 50
+                            "ServiceDesiredCount": "1",
+                            "MaxPercent": "200",
+                            "MinPercent": "50"
                           }
                         # "DesiredCount": "1",
                         # "Cluster": "${Cluster}",
@@ -383,13 +383,13 @@ Resources:
                         #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
                         ParameterOverrides: !Sub |
                           {
-                            "SpotPrice": "0.2",
-                            "ASGDesiredCapacity": "1",
+                            "SpotPrice": "0.1",
+                            "ASGDesiredCapacity": "2",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
-                            "ServiceDesiredCount": 2,
-                            "MaxPercent": 200,
-                            "MinPercent": 100                            
+                            "ServiceDesiredCount": "2",
+                            "MaxPercent": "200",
+                            "MinPercent": "100"                            
                           }
                       InputArtifacts:
                         - Name: SourceZip
@@ -456,10 +456,13 @@ Resources:
                         #ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
                         ParameterOverrides: !Sub |
                           {
-                            "SpotPrice": "0.2",
-                            "ASGDesiredCapacity": "1",
+                            "SpotPrice": "0.1",
+                            "ASGDesiredCapacity": "2",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
-                            "Repository": "${EcrRepository}"
+                            "Repository": "${EcrRepository}",
+                            "ServiceDesiredCount": "1",
+                            "MaxPercent": "200",
+                            "MinPercent": "50"                            
                           }
                         # "DesiredCount": "1",
                         # "Cluster": "${Cluster}",
@@ -498,10 +501,13 @@ Resources:
                         #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
                         ParameterOverrides: !Sub |
                           {
-                            "SpotPrice": "0.2",
-                            "ASGDesiredCapacity": "1",
+                            "SpotPrice": "0.1",
+                            "ASGDesiredCapacity": "2",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
-                            "Repository": "${EcrRepository}"
+                            "Repository": "${EcrRepository}",
+                            "ServiceDesiredCount": "2",
+                            "MaxPercent": "200",
+                            "MinPercent": "100"  
                           }
                       InputArtifacts:
                         - Name: SourceZip
