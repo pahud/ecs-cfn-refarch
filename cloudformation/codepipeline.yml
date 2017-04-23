@@ -1,0 +1,720 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+    ServiceName:
+        Type: String
+        Default: ecs-refarch
+        Description: Name for the service, used in the code repository, Lambda function, and pipeline names
+    CodeBuildEnvironment:
+        Type: String
+        Default: "docker:1.12.1"
+        Description: Name of the image to use for the CodeBuild container
+    UseCodeCommit:
+      Type: String
+      AllowedValues: ["yes", "no"]
+      Description: select yes if you'd like to use CodeCommit instead of Github
+      Default: "no"
+
+    GitHubUser:
+      Type: String
+      Description: Your username on GitHub. Skip this if you use CodeCommit.
+      Default: pahud
+
+    GitHubRepo:
+      Type: String
+      Default: ecs-demo-php-simple-app
+      Description: The repo name of the sample service. Skip this if you use CodeCommit.
+      Default: ecs-cfn-refarch
+
+    GitHubBranch:
+      Type: String
+      Default: master
+      Description: The branch of the repo to continuously deploy. Skip this if you use CodeCommit.
+      Default: master
+
+    GitHubToken:
+      Type: String
+      Description: >
+        Token for the user specified above. (https://github.com/settings/tokens) Skip this if you use CodeCommit.
+      Default: AWS::NoValue
+    
+
+Conditions:
+  UseCodeCommit: !Equals [ !Ref UseCodeCommit, "yes" ] 
+  NotUseCodeCommit: !Equals [ !Ref UseCodeCommit, "no" ] 
+
+Resources:
+    EcrRepository:
+      Type: AWS::ECR::Repository
+      # DeletionPolicy: Retain
+
+    #CodeCommit repository for the service
+    CodeRepository:
+        Condition:  UseCodeCommit
+        Type: AWS::CodeCommit::Repository
+        Properties:
+            RepositoryName: !Sub '${ServiceName}_repo'
+            RepositoryDescription: !Sub 'Repository for the ${ServiceName} service'
+
+    # CodeBuild project and resources (S3 Bucket for build artifacts, Role, Project)
+    BuildArtifactsBucket:
+        Type: AWS::S3::Bucket
+        DeletionPolicy: Delete
+    CodeBuildServiceRole:
+        # DependsOn: Repository
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Action: 
+                      - 'sts:AssumeRole'
+                    Effect: Allow
+                    Principal:
+                      Service:
+                        - codebuild.amazonaws.com
+            Path: /
+            Policies:
+                - PolicyName: CodeBuildAccess
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                      - Effect: Allow
+                        Resource:
+                          - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ServiceName}_build'
+                          - !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/codebuild/${ServiceName}_build:*'
+                        Action:
+                          - 'logs:CreateLogGroup'
+                          - 'logs:CreateLogStream'
+                          - 'logs:PutLogEvents'
+                      - Effect: Allow
+                        Resource:
+                          - !Sub 'arn:aws:s3:::${BuildArtifactsBucket}/*'
+                        Action: 
+                          - 's3:GetObject'
+                          - 's3:GetObjectVersion'
+                          - 's3:PutObject'
+                      - Effect: Allow
+                        Resource: !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/${EcrRepository}
+                        Action: 
+                          - ecr:GetDownloadUrlForLayer
+                          - ecr:BatchGetImage
+                          - ecr:BatchCheckLayerAvailability
+                          - ecr:PutImage
+                          - ecr:InitiateLayerUpload
+                          - ecr:UploadLayerPart
+                          - ecr:CompleteLayerUpload
+                      - Effect: Allow
+                        Resource: '*'
+                        Action: 
+                          - ecr:GetAuthorizationToken
+
+    # CodeBuildProject:
+    #     Type: AWS::CodeBuild::Project
+    #     Properties:
+    #         Name: !Sub '${ServiceName}_build'
+    #         Artifacts:
+    #             Type: CODEPIPELINE
+    #         Environment: 
+    #             Type: LINUX_CONTAINER
+    #             ComputeType: BUILD_GENERAL1_SMALL
+    #             Image: !Sub 'aws/codebuild/${CodeBuildEnvironment}'
+    #             EnvironmentVariables:
+    #               - Name: BUILD_OUTPUT_BUCKET
+    #                 Value: !Ref BuildArtifactsBucket
+    #         ServiceRole: !GetAtt CodeBuildServiceRole.Arn
+    #         Source: 
+    #             Type: CODEPIPELINE
+
+    CodeBuildProject:
+      Type: AWS::CodeBuild::Project
+      Properties:
+        Artifacts:
+          Type: CODEPIPELINE
+        Source:
+          Type: CODEPIPELINE
+        Environment:
+          ComputeType: BUILD_GENERAL1_SMALL
+          Image: aws/codebuild/docker:1.12.1
+          Type: "LINUX_CONTAINER"
+          EnvironmentVariables:
+            - Name: AWS_DEFAULT_REGION
+              Value: !Ref AWS::Region
+            - Name: REPOSITORY_URI
+              Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${EcrRepository}
+        Name: !Sub '${ServiceName}_build'
+        ServiceRole: !Ref CodeBuildServiceRole
+
+    # CodeDeploy
+    CodeDeployServiceRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Action: 
+                      - 'sts:AssumeRole'
+                    Effect: Allow
+                    Principal:
+                      Service:
+                        - codedeploy.amazonaws.com
+            Path: /
+            ManagedPolicyArns:
+                - 'arn:aws:iam::aws:policy/service-role/AWSCodeDeployRole'
+ 
+
+    # Integration tests function
+    # StartTestsFunctionExecutionRole:
+    #   Type: AWS::IAM::Role
+    #   Properties:
+    #     AssumeRolePolicyDocument:
+    #       Version: '2012-10-17'
+    #       Statement:
+    #         - Action: 
+    #             - 'sts:AssumeRole'
+    #           Effect: Allow
+    #           Principal:
+    #             Service: 
+    #               - lambda.amazonaws.com
+    #     Path: /
+    #     Policies:
+    #       - PolicyName: InvokeAsync
+    #         PolicyDocument:
+    #           Version: '2012-10-17'
+    #           Statement:
+    #             - Action:
+    #                 - 'lambda:InvokeAsync'
+    #                 - 'lambda:InvokeFunction'
+    #                 - 'cloudformation:DescribeStacks'
+    #                 - 'codepipeline:*'
+    #                 - 'logs:*'
+    #               Effect: Allow
+    #               Resource: '*'
+
+    # CodePipeline definition and required roles
+    CFNPipelinePolicy:
+        Type: AWS::IAM::ManagedPolicy
+        Properties:
+            Description: CloudFormation Pipeline Execution Policy
+            Path: "/"
+            PolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                    Effect: Allow
+                    Action: 
+                        - 'cloudformation:CreateStack'
+                        - 'cloudformation:DescribeStacks'
+                        - 'cloudformation:DeleteStack'
+                        - 'cloudformation:UpdateStack'
+                        - 'cloudformation:CreateChangeSet'
+                        - 'cloudformation:ExecuteChangeSet'
+                        - 'cloudformation:DeleteChangeSet'
+                        - 'cloudformation:DescribeChangeSet'
+                        - 'cloudformation:SetStackPolicy'
+                        - 'cloudformation:SetStackPolicy'
+                        - 'cloudformation:ValidateTemplate'
+                        - 'codebuild:StartBuild'
+                        - 'codebuild:BatchGetBuilds'
+                        - 'codedeploy:GetApplication'
+                        - 'codedeploy:GetDeploymentGroup'
+                        - 'codedeploy:ListApplications'
+                        - 'codedeploy:ListDeploymentGroups'
+                    Resource: "*"
+    CloudFormationExecutionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            Action: 
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+        Path: /
+        ManagedPolicyArns:
+          - 'arn:aws:iam::aws:policy/AdministratorAccess'
+    PipelineExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            AssumeRolePolicyDocument:
+                Version: '2012-10-17'
+                Statement:
+                  - Action: 
+                    - 'sts:AssumeRole'
+                    Effect: Allow
+                    Principal:
+                      Service: 
+                        - codepipeline.amazonaws.com
+            Path: /
+            ManagedPolicyArns:
+                - 'arn:aws:iam::aws:policy/AWSCodeCommitFullAccess'
+                - 'arn:aws:iam::aws:policy/AmazonS3FullAccess'
+                - 'arn:aws:iam::aws:policy/AWSCodePipelineFullAccess'
+                - 'arn:aws:iam::aws:policy/AWSCodeDeployFullAccess'
+                - !Ref CFNPipelinePolicy
+            Policies:
+                - PolicyName: CodePipelineAccess
+                  PolicyDocument:
+                    Version: '2012-10-17'
+                    Statement:
+                        - Action:
+                            - 'iam:PassRole'
+                            - 'lambda:InvokeFunction'
+                            - 'lambda:ListFunctions'
+                            - 'lambda:InvokeAsyc'
+                          Effect: Allow
+                          Resource: '*'
+
+
+#
+#  CoePipeline using Github as source                         
+#
+    PipelineWithGithub:
+        Condition:  NotUseCodeCommit
+        Type: AWS::CodePipeline::Pipeline
+        Properties:
+            ArtifactStore: 
+                Location: !Ref BuildArtifactsBucket
+                Type: S3
+            Name: !Sub ${ServiceName}_pipeline
+            RoleArn: !GetAtt PipelineExecutionRole.Arn
+            # DisableInboundStageTransitions: 
+            #   - 
+            #     Reason: "init disabled"
+            #     StageName: CreateEnvironments
+            Stages:
+                - Name: Source
+                  Actions:
+                    - Name: CodeRepo
+                      ActionTypeId:
+                        Category: Source
+                        Owner: ThirdParty
+                        Provider: GitHub
+                        Version: 1
+                      Configuration:
+                        # Owner: AWS::NoValue
+                        # Repo: AWS::NoValue
+                        # Branch: AWS::NoValue
+                        # OAuthToken: AWS::NoValue
+                        Owner: !Ref GitHubUser
+                        Repo: !Ref GitHubRepo
+                        Branch: !Ref GitHubBranch
+                        OAuthToken: !Ref GitHubToken
+                        # RepositoryName: !Sub '${ServiceName}_repo'
+                        # BranchName: master
+                      OutputArtifacts:
+                        - Name: SourceZip
+                      RunOrder: 1
+                - Name: Build
+                  Actions:
+                    - Name: CodeBuild
+                      ActionTypeId:
+                        Category: Build
+                        Owner: AWS
+                        Provider: CodeBuild
+                        Version: 1
+                      Configuration:
+                        ProjectName: !Ref CodeBuildProject
+                      InputArtifacts:
+                        - Name: SourceZip
+                      OutputArtifacts:
+                        - Name: BuildOutput
+                - Name: CreateEnvironments
+                  Actions:
+                    - Name: CreateUpdateBeta
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CREATE_UPDATE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Beta'
+                        # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Beta'
+                        TemplatePath: SourceZip::cloudformation/service.yml
+                        Capabilities: CAPABILITY_IAM
+                        #ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                        ParameterOverrides: !Sub |
+                          {
+                            "SpotPrice": "0.2",
+                            "ASGDesiredCapacity": "1",
+                            "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
+                            "Repository": "${EcrRepository}"
+                          }
+                        # "DesiredCount": "1",
+                        # "Cluster": "${Cluster}",
+                        # "TargetGroup": "${TargetGroup}",
+                    
+                      InputArtifacts:
+                        - Name: SourceZip
+                        - Name: BuildOutput
+                      RunOrder: 1
+                    # - Name: ExecuteChangeSetForBeta
+                    #   ActionTypeId:
+                    #     Category: Deploy
+                    #     Owner: AWS
+                    #     Provider: CloudFormation
+                    #     Version: 1
+                    #   Configuration:
+                    #     ActionMode: CHANGE_SET_EXECUTE
+                    #     RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                    #     StackName: !Sub '${ServiceName}-Beta'
+                    #     ChangeSetName: !Sub '${ServiceName}-ChangeSet-Beta'
+                    #   OutputArtifacts:
+                    #     - Name: !Sub '${ServiceName}BetaChangeSet'
+                      # RunOrder: 2
+
+                    # Gamma
+                    # - Name: CreateUpdateGamma
+                    #   ActionTypeId:
+                    #     Category: Deploy
+                    #     Owner: AWS
+                    #     Provider: CloudFormation
+                    #     Version: 1
+                    #   Configuration:
+                    #     ActionMode: CREATE_UPDATE
+                    #     RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                    #     StackName: !Sub '${ServiceName}-Gamma'
+                    #     # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                    #     TemplatePath: SourceZip::cloudformation/service.yml
+                    #     Capabilities: CAPABILITY_IAM
+                    #     ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                    #   InputArtifacts:
+                    #     - Name: SourceZip
+                    #   RunOrder: 1
+
+                    # - Name: ExecuteChangeSetForGamma
+                    #   ActionTypeId:
+                    #     Category: Deploy
+                    #     Owner: AWS
+                    #     Provider: CloudFormation
+                    #     Version: 1
+                    #   Configuration:
+                    #     ActionMode: CHANGE_SET_EXECUTE
+                    #     RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                    #     StackName: !Sub '${ServiceName}-Gamma'
+                    #     ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                    #   OutputArtifacts:
+                    #     - Name: !Sub '${ServiceName}GammaChangeSet'
+                    #   RunOrder: 2
+                    - Name: CreateUpdateProd
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CREATE_UPDATE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Prod'
+                        # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                        TemplatePath: SourceZip::cloudformation/service.yml
+                        Capabilities: CAPABILITY_IAM
+                        #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                        ParameterOverrides: !Sub |
+                          {
+                            "SpotPrice": "0.2",
+                            "ASGDesiredCapacity": "1",
+                            "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
+                            "Repository": "${EcrRepository}"
+                          }
+                      InputArtifacts:
+                        - Name: SourceZip
+                        - Name: BuildOutput
+                      RunOrder: 1
+                    # - Name: ExecuteChangeSetForProd
+                    #   ActionTypeId:
+                    #     Category: Deploy
+                    #     Owner: AWS
+                    #     Provider: CloudFormation
+                    #     Version: 1
+                    #   Configuration:
+                    #     ActionMode: CHANGE_SET_EXECUTE
+                    #     RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                    #     StackName: !Sub '${ServiceName}-Prod'
+                    #     ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                    #   OutputArtifacts:
+                    #     - Name: !Sub '${ServiceName}ProdChangeSet'
+                    #   RunOrder: 2
+                
+
+
+                # - Name: Gamma
+                #   Actions:
+                #     - Name: CreateChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_REPLACE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Gamma'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                #         TemplatePath: SourceZip::cloudformation/cfn-service.yml
+                #         Capabilities: CAPABILITY_IAM
+                #         ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #       RunOrder: 1
+                #     - Name: ExecuteChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_EXECUTE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Gamma'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                #       OutputArtifacts:
+                #         - Name: !Sub '${ServiceName}GammaChangeSet'
+                #       RunOrder: 2
+                # - Name: Prod
+                #   Actions:
+                #     - Name: CreateChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_REPLACE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Prod'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                #         TemplatePath: SourceZip::cloudformation/cfn-service.yml
+                #         Capabilities: CAPABILITY_IAM
+                #         #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                #         ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #       RunOrder: 1
+                #     - Name: ExecuteChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_EXECUTE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Prod'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                #       OutputArtifacts:
+                #         - Name: !Sub '${ServiceName}ProdChangeSet'
+                #       RunOrder: 2
+
+
+#
+#  CoePipeline using CodeCommit as source                         
+#
+    PipelineWithCodeCommit:
+        Condition:  UseCodeCommit
+        Type: AWS::CodePipeline::Pipeline
+        Properties:
+            ArtifactStore: 
+                Location: !Ref BuildArtifactsBucket
+                Type: S3
+            Name: !Sub ${ServiceName}_pipeline
+            RoleArn: !GetAtt PipelineExecutionRole.Arn
+            Stages:
+                - Name: Source
+                  Actions:
+                    - Name: CodeCommitRepo
+                      ActionTypeId:
+                        Category: Source
+                        Owner: AWS
+                        Provider: CodeCommit
+                        Version: 1
+                      Configuration:
+                        RepositoryName: !Sub '${ServiceName}_repo'
+                        BranchName: master
+                      OutputArtifacts:
+                        - Name: SourceZip
+                      RunOrder: 1
+                # - Name: Build
+                #   Actions:
+                #     - Name: CodeBuild
+                #       ActionTypeId:
+                #         Category: Build
+                #         Owner: AWS
+                #         Provider: CodeBuild
+                #         Version: 1
+                #       Configuration:
+                #         ProjectName: !Ref CodeBuildProject
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #       OutputArtifacts:
+                #         - Name: BuiltZip
+                - Name: CreateEnvironments
+                  Actions:
+                    - Name: CreateChangeSetForBeta
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CHANGE_SET_REPLACE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Beta'
+                        ChangeSetName: !Sub '${ServiceName}-ChangeSet-Beta'
+                        TemplatePath: SourceZip::cloudformation/service.yml
+                        Capabilities: CAPABILITY_IAM
+                        ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                      InputArtifacts:
+                        - Name: SourceZip
+                      RunOrder: 1
+                    - Name: ExecuteChangeSetForBeta
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CHANGE_SET_EXECUTE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Beta'
+                        ChangeSetName: !Sub '${ServiceName}-ChangeSet-Beta'
+                      OutputArtifacts:
+                        - Name: !Sub '${ServiceName}BetaChangeSet'
+                      RunOrder: 2
+                    # Gamma
+                    - Name: CreateChangeSetForGamma
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CHANGE_SET_REPLACE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Gamma'
+                        ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                        TemplatePath: SourceZip::cloudformation/service.yml
+                        Capabilities: CAPABILITY_IAM
+                        ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                      InputArtifacts:
+                        - Name: SourceZip
+                      RunOrder: 1
+                    - Name: ExecuteChangeSetForGamma
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CHANGE_SET_EXECUTE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Gamma'
+                        ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                      OutputArtifacts:
+                        - Name: !Sub '${ServiceName}GammaChangeSet'
+                      RunOrder: 2
+                    - Name: CreateChangeSetForProd
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CHANGE_SET_REPLACE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Prod'
+                        ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                        TemplatePath: SourceZip::cloudformation/service.yml
+                        Capabilities: CAPABILITY_IAM
+                        #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                        ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                      InputArtifacts:
+                        - Name: SourceZip
+                      RunOrder: 1
+                    - Name: ExecuteChangeSetForProd
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CHANGE_SET_EXECUTE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Prod'
+                        ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                      OutputArtifacts:
+                        - Name: !Sub '${ServiceName}ProdChangeSet'
+                      RunOrder: 2
+                
+
+
+                # - Name: Gamma
+                #   Actions:
+                #     - Name: CreateChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_REPLACE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Gamma'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                #         TemplatePath: SourceZip::cloudformation/cfn-service.yml
+                #         Capabilities: CAPABILITY_IAM
+                #         ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #       RunOrder: 1
+                #     - Name: ExecuteChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_EXECUTE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Gamma'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Gamma'
+                #       OutputArtifacts:
+                #         - Name: !Sub '${ServiceName}GammaChangeSet'
+                #       RunOrder: 2
+                # - Name: Prod
+                #   Actions:
+                #     - Name: CreateChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_REPLACE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Prod'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                #         TemplatePath: SourceZip::cloudformation/cfn-service.yml
+                #         Capabilities: CAPABILITY_IAM
+                #         #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                #         ParameterOverrides: '{ "SpotPrice": "0.2", "ASGDesiredCapacity": "1" }'
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #       RunOrder: 1
+                #     - Name: ExecuteChangeSet
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CHANGE_SET_EXECUTE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Stack-Prod'
+                #         ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                #       OutputArtifacts:
+                #         - Name: !Sub '${ServiceName}ProdChangeSet'
+                #       RunOrder: 2
