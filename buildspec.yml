@@ -2,6 +2,7 @@ version: 0.1
 phases:
   pre_build:
     commands:
+      - echo "CDDEBUILD_BUILD_ID $CODEBUILD_BUILD_ID"
       - echo -n "$CODEBUILD_BUILD_ID" | sed "s/.*:\([[:xdigit:]]\{7\}\).*/\1/" > /tmp/build_id.out
       - printf "%s:%s" "$REPOSITORY_URI" "$(cat /tmp/build_id.out)" > /tmp/build_tag.out
       - printf '{"tag":"%s"}' "$(cat /tmp/build_id.out)" > /tmp/build.json
