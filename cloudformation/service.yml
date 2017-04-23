@@ -17,7 +17,6 @@ Mappings:
       nginx: m3.medium
       web: m3.medium
 
-
 Parameters:
   SshKeyName:
     Type: String
@@ -51,7 +50,15 @@ Parameters:
   Repository:
     Type: String
     Description: placeholder for ECR repository
-
+  MaxPercent:
+    Type: Number
+    Default: 200
+  MinPercent:
+    Type: Number
+    Default: 50
+  ServiceDesiredCount:
+    Type: Number
+    Default: 1
 
 
 Conditions:
@@ -627,9 +634,9 @@ Resources:
     Properties: 
       Cluster: !Ref ECSDefaultCluster
       DeploymentConfiguration:
-        MaximumPercent: 200
-        MinimumHealthyPercent: 50
-      DesiredCount: 1
+        MaximumPercent: !Ref MaxPercent
+        MinimumHealthyPercent: !Ref MinPercent
+      DesiredCount: !Ref ServiceDesiredCount
       LoadBalancers: 
           - ContainerName: !Ref AppName
             ContainerPort: 2015

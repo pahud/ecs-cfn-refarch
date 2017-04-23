@@ -341,7 +341,10 @@ Resources:
                             "SpotPrice": "0.2",
                             "ASGDesiredCapacity": "1",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
-                            "Repository": "${EcrRepository}"
+                            "Repository": "${EcrRepository}",
+                            "ServiceDesiredCount": 1,
+                            "MaxPercent": 200,
+                            "MinPercent": 50
                           }
                         # "DesiredCount": "1",
                         # "Cluster": "${Cluster}",
@@ -383,7 +386,10 @@ Resources:
                             "SpotPrice": "0.2",
                             "ASGDesiredCapacity": "1",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
-                            "Repository": "${EcrRepository}"
+                            "Repository": "${EcrRepository}",
+                            "ServiceDesiredCount": 2,
+                            "MaxPercent": 200,
+                            "MinPercent": 100                            
                           }
                       InputArtifacts:
                         - Name: SourceZip
