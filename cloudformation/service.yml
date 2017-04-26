@@ -62,7 +62,7 @@ Parameters:
     Default: 1
   UseBuiltInTaskDefinition:
     Type: String
-    Default: "no"
+    Default: "yes"
     Description: "select yes if you run this template standalone"
     AllowedValues:
       - "yes"

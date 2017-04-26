@@ -340,6 +340,7 @@ Resources:
                           {
                             "SpotPrice": "0.1",
                             "ASGDesiredCapacity": "2",
+                            "UseBuiltInTaskDefinition": "no",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
                             "ServiceDesiredCount": "1",
@@ -385,6 +386,7 @@ Resources:
                           {
                             "SpotPrice": "0.1",
                             "ASGDesiredCapacity": "2",
+                            "UseBuiltInTaskDefinition": "no",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
                             "ServiceDesiredCount": "2",
@@ -458,6 +460,7 @@ Resources:
                           {
                             "SpotPrice": "0.1",
                             "ASGDesiredCapacity": "2",
+                            "UseBuiltInTaskDefinition": "no",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
                             "ServiceDesiredCount": "1",
@@ -503,6 +506,7 @@ Resources:
                           {
                             "SpotPrice": "0.1",
                             "ASGDesiredCapacity": "2",
+                            "UseBuiltInTaskDefinition": "no",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
                             "ServiceDesiredCount": "2",
