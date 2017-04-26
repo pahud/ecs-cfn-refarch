@@ -19,6 +19,7 @@ Mappings:
 
 Parameters:
   SshKeyName:
+    # Type: AWS::EC2::KeyPair::KeyName
     Type: String
     Description: Optional - Name of an existing EC2 KeyPair to enable SSH access to the ECS instances. Set to 'NoValue' if no SSH key is required.
     Default: NoValue
@@ -59,13 +60,20 @@ Parameters:
   ServiceDesiredCount:
     Type: Number
     Default: 1
-
+  UseBuiltInTaskDefinition:
+    Type: String
+    Default: "no"
+    Description: "select yes if you run this template standalone"
+    AllowedValues:
+      - "yes"
+      - "no"
 
 Conditions:
   HasSshKeyName: !Not [ !Equals [!Ref SshKeyName, NoValue] ]
   SpotOnlyCond: !Not [ !Equals [ !Ref SpotPrice, 0 ] ]
   UseALBCond: !Equals [ !Ref UseALB, "yes" ] 
   UseELBCond: !Equals [ !Ref UseALB, "no" ] 
+  UseBuiltInTaskDefinitionCond: !Equals [ !Ref UseBuiltInTaskDefinition, "yes" ]
 
 
 Resources:
@@ -618,7 +626,12 @@ Resources:
           - 
             Name: Caddy
             #Image: "abiosoft/caddy:php"
-            Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
+            # Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
+            Image:
+              !If
+                - UseBuiltInTaskDefinitionCond
+                - "abiosoft/caddy:php"
+                - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
             Cpu: "10"
             PortMappings: 
               - 
