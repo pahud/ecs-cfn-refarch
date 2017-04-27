@@ -21,7 +21,7 @@ check the cloudformation output and click the ***LoadBalancerURL*** link to see 
 
 ### Notice
 
-- By default this template will create on-demand instance. If you need spot instance instead, specify ***SpotPrice*** parameter, e.g.  "**0.1**"
+- By default this template will create spot instance(m3.medium). If you need on-demand instance instead, specify ***SpotPrice*** parameter to "**0**"
 
 
 
