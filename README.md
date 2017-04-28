@@ -17,7 +17,9 @@ click the button to launch the demo stack in *us-west-2*
 
 check the cloudformation output and click the ***LoadBalancerURL*** link to see the result.
 
+For **Amazon ECS Windows Container**, please click the button below:
 
+[![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=ecs-win-refarch&templateURL=https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/service-windows.yml)
 
 ### Notice
 
