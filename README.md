@@ -66,17 +66,17 @@ The CloudFormation template requires the following parameters:
 
 
 
-## Service Autoscaling
+## Scaling from ECS Service Autoscaling
 
 The Cloudformation template will generate a few Service Autoscaling policies for you:
 
 ![service autoscaling](Images/ecs-service-autoscaling-01.png).
 
-## Autoscaling Group
+## Scaling from Autoscaling Group
 
 The Autoscaling Group will scale out when:
 
-1. The ***CPUUtilization*** of EC2 instances within the Autoscaling Group is high
-2. The ***CPUReservation*** of ECS Cluster is high
-3. The ***MemoryReservation*** of ECS Cluster is high
+1. The **CPUUtilization** of EC2 instances within the Autoscaling Group is high
+2. The **CPUReservation** of ECS Cluster is high
+3. The **MemoryReservation** of ECS Cluster is high
 
