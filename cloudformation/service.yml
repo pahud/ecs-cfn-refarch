@@ -30,7 +30,7 @@ Parameters:
   ASGDesiredCapacity:
     Type: Number
     Description: instance count under AutoScalingGroup
-    Default: 1
+    Default: 2
   UseALB:
     Type: String
     AllowedValues: ["yes", "no"]
@@ -59,7 +59,7 @@ Parameters:
     Default: 50
   ServiceDesiredCount:
     Type: Number
-    Default: 1
+    Default: 2
   UseBuiltInTaskDefinition:
     Type: String
     Default: "yes"
