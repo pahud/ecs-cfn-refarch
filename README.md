@@ -80,3 +80,11 @@ The Autoscaling Group will scale out when:
 2. The **CPUReservation** of ECS Cluster is high
 3. The **MemoryReservation** of ECS Cluster is high
 
+
+
+## Log consolidation
+
+Amazon ECS supports many [docker log drivers](https://docs.docker.com/engine/admin/logging/overview/#supported-logging-drivers), by default, this refarch will use [awslogs](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_awslogs.html) and output consolidated logs to Amazon CloudWatch Logs.
+
+
+
