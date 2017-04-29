@@ -80,7 +80,7 @@ The Autoscaling Group will scale out when:
 2. The **CPUReservation** of ECS Cluster is high
 3. The **MemoryReservation** of ECS Cluster is high
 
-**UPDATE: **This refarch will configure the hosts scaling policies just as [Expedia's sharing](https://twitter.com/pahudnet/status/858450488609480704) in AWS Summit Santa Clara 2016([video](https://youtu.be/7r4_Ne7v38o?t=30m53s)).
+**UPDATE** - This refarch will configure the hosts scaling policies just as [Expedia's sharing](https://twitter.com/pahudnet/status/858450488609480704) in AWS Summit Santa Clara 2016([video](https://youtu.be/7r4_Ne7v38o?t=30m53s)).
 
 ## Log consolidation
 
