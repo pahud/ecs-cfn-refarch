@@ -569,6 +569,8 @@ Resources:
       LaunchConfigurationName: !Ref ASGLC
       #LoadBalancerNames:
       #  - 
+      MetricsCollection:
+        - Granularity: 1Minute
       MaxSize: 10
       # MetricsCollection:
       #   - MetricsCollection
@@ -750,7 +752,105 @@ Resources:
         MetricAggregationType: Average
         StepAdjustments:
         - MetricIntervalLowerBound: 0
-          ScalingAdjustment: -50            
+          ScalingAdjustment: -50        
+
+
+######################
+# Scaling Policies for Autoscaling Group
+######################          
+  ASGscalingPolicy01:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: PercentChangeInCapacity
+      PolicyType: StepScaling
+      # Cooldown: 60
+      AutoScalingGroupName: !Ref ASGDefault
+      # ScalingAdjustment: 1  
+      StepAdjustments:   
+        - MetricIntervalLowerBound: 0
+          # MetricIntervalUpperBound: 60
+          ScalingAdjustment: 200        
+  ASGscalingPolicy02:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: PercentChangeInCapacity
+      PolicyType: StepScaling
+      # Cooldown: 60
+      AutoScalingGroupName: !Ref ASGDefault
+      # ScalingAdjustment: 1  
+      StepAdjustments:   
+        - MetricIntervalLowerBound: 0
+          # MetricIntervalUpperBound: 60
+          ScalingAdjustment: 200  
+
+  ASGscalingPolicy03:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: PercentChangeInCapacity
+      PolicyType: StepScaling
+      # Cooldown: 60
+      AutoScalingGroupName: !Ref ASGDefault
+      # ScalingAdjustment: 1  
+      StepAdjustments:   
+        - MetricIntervalLowerBound: 0
+          # MetricIntervalUpperBound: 60
+          ScalingAdjustment: 200  
+
+
+######################
+# Alarm to Scale ASG
+######################
+  ASGCPUHighAlarmScaleOut:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '60'
+      AlarmDescription: Alarm if our ASG average CPU Utilization is high
+      Period: '60'
+      AlarmActions: [!Ref ASGscalingPolicy01]
+      Namespace: AWS/EC2
+      Dimensions:
+      - Name: AutoScalingGroupName
+        Value: !Ref ASGDefault
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUUtilization
+
+  ECSClusterCPURsvHighScaleOut:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '75'
+      AlarmDescription: Alarm if our ECS Cluster CPUReservation is high
+      Period: '60'
+      AlarmActions: [!Ref ASGscalingPolicy02]
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: ClusterName
+        Value: !Ref Cluster
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUReservation
+
+  ECSClusterMemRsvHighScaleOut:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '75'
+      AlarmDescription: Alarm if our ECS Cluster MemoryReservation is high
+      Period: '60'
+      AlarmActions: [!Ref ASGscalingPolicy03]
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: ClusterName
+        Value: !Ref Cluster
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: MemoryReservation
+
+#############################
+# Alarm to Scale ECS Service
+#############################
 
 
   ALB500sAlarmScaleUp:
@@ -768,6 +868,9 @@ Resources:
         Value: !Ref ECSService
       ComparisonOperator: GreaterThanThreshold
       MetricName: HTTPCode_ELB_5XX_Count
+
+
+
 
 
   ServiceCPUUtilAlarmScaleOut:

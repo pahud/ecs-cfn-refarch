@@ -63,3 +63,20 @@ The CloudFormation template requires the following parameters:
   - **GitHubUser**: Your username on GitHub.
   - **ServiceName**: Your ECS Service name.
   - **UseCodeCommit**: If you use CodeCommit instead, select **"yes"** and ignore all GithHub parameters above.
+
+
+
+## Service Autoscaling
+
+The Cloudformation template will generate a few Service Autoscaling policies for you:
+
+![service autoscaling](Images/ecs-service-autoscaling-01.png).
+
+## Autoscaling Group
+
+The Autoscaling Group will scale out when:
+
+1. The ***CPUUtilization*** of EC2 instances within the Autoscaling Group is high
+2. The ***CPUReservation*** of ECS Cluster is high
+3. The ***MemoryReservation*** of ECS Cluster is high
+
