@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Description:
-  ECS with ASG and ALB
+  ECS Windows Container with ASG and ALB
 
 Mappings:
   VpcCidrs:
@@ -630,53 +630,7 @@ Resources:
             </powershell>
             <persist>true</persist>
 
-      # UserData: 
-      #   "Fn::Base64": 
-      #     !Sub |
-      #           <powershell>
-      #           # Set agent env variables for the Machine context (durable)
-      #           [Environment]::SetEnvironmentVariable("ECS_CLUSTER", "${ECSDefaultCluster}", "Machine")
-      #           $agentVersion = 'v1.14.0';
-      #           $agentZipUri = "https://s3.amazonaws.com/amazon-ecs-agent/ecs-agent-windows-$agentVersion.zip"; 
-      #           $agentZipMD5Uri = "$agentZipUri.md5";
-      #           $ecsExeDir = "$env:ProgramFiles\\Amazon\\ECS";
-      #           $zipFile = "$env:TEMP\\ecs-agent.zip";
-      #           echo "log" >> c:\\windows\\temp\\log1.txt;
-      #           echo $zipFile >> c:\\windows\\temp\\log1.txt;
-      #           echo $ecsExeDir >> c:\\windows\\temp\\log1.txt;
-      #           $md5File = "$env:TEMP\\ecs-agent.zip.md5";
-      #           Invoke-RestMethod -OutFile $zipFile -Uri $agentZipUri;
-      #           Invoke-RestMethod -OutFile $md5File -Uri $agentZipMD5Uri;
-      #           $expectedMD5 = (Get-Content $md5File);
-      #           $md5 = New-Object -TypeName System.Security.Cryptography.MD5CryptoServiceProvider;"
-      #           $actualMD5 = [System.BitConverter]::ToString($md5.ComputeHash([System.IO.File]::ReadAllBytes($zipFile))).replace(\"-\", \"\");
-      #           if($expectedMD5 -ne $actualMD5) {
-      #             echo "Download does not match hash.";
-      #             echo "Expected: $expectedMD5 - Got: $actualMD5";
-      #             exit 1;", 
-      #           };
-      #           Expand-Archive -Path $zipFile -DestinationPath $ecsExeDir -Force;
-      #           $jobname = "ECS-Agent-Init";
-      #           $script =  "cd '$ecsExeDir'; .\\amazon-ecs-agent.ps1";
-      #           $repeat = (New-TimeSpan -Minutes 1);
-      #           try {
-      #             Unregister-ScheduledJob -Name $jobname | out-null"
-      #           }
-      #           catch{};
-      #           Invoke-Expression("cd $ecsExeDir; .\\amazon-ecs-agent.ps1");
-      #           $scriptblock = [scriptblock]::Create("$script");
-      #           $trigger = New-JobTrigger -At (Get-Date).Date -RepeatIndefinitely -RepetitionInterval $repeat -Once;"
-      #           $options = New-ScheduledJobOption -RunElevated -ContinueIfGoingOnBattery -StartIfOnBattery;
-      #           Register-ScheduledJob -Name $jobname -ScriptBlock $scriptblock -Trigger $trigger -ScheduledJobOption $options -RunNow;
-      #           echo $scriptblock >> c:\\windows\\temp\\log1.txt;
-      #           echo $trigger >> c:\\windows\\temp\\log1.txt;
-      #           echo $options >> c:\\windows\\temp\\log1.txt;
 
-      #           # end of script\n", 
-      #           cfn-init.exe -v -s ${AWS::StackId} -r ContainerInstances --region ${AWS::Region}
-      #           cfn-signal.exe -e $lastexitcode --stack ${AWS::StackName} --resource ECSAutoScalingGroup --region ${AWS::Region} 
-      #           </powershell>
-      #           <persist>true</persist>
 
   ASGDefault:
     Type: "AWS::AutoScaling::AutoScalingGroup"
@@ -773,28 +727,6 @@ Resources:
       #     Name: "my-vol"  
 
 
-  # ECSCaddyTD:
-  #     Type: "AWS::ECS::TaskDefinition"
-  #     Properties: 
-  #       ContainerDefinitions: 
-  #         - 
-  #           Name: Caddy
-  #           #Image: "abiosoft/caddy:php"
-  #           # Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
-  #           Image:
-  #             !If
-  #               - UseBuiltInTaskDefinitionCond
-  #               - "abiosoft/caddy:php"
-  #               - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
-  #           Cpu: "10"
-  #           PortMappings: 
-  #             - 
-  #               ContainerPort: 2015
-  #               HostPort: 0
-  #           Memory: "256"
-  #           Essential: "true"
-
-
   ECSService:
     DependsOn: [publicALB, publicALBTargetGroup, ALBListener]
     Type: "AWS::ECS::Service"
@@ -837,8 +769,8 @@ Outputs:
         - 'http://${LBDNS}'
         -
           LBDNS: !GetAtt publicALB.DNSName
-  # ECSServiceName: 
-  #   Value: !GetAtt ECSService.Name
+  ECSServiceName: 
+    Value: !GetAtt ECSService.Name
 
 
   PublicZoneA:
