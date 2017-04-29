@@ -38,7 +38,7 @@ Parameters:
   ASGMinSize:
     Type: Number
     Description: min instance count under AutoScalingGroup
-    Default: 0
+    Default: 2
   UseALB:
     Type: String
     AllowedValues: ["yes", "no"]
@@ -752,7 +752,7 @@ Resources:
         MetricAggregationType: Average
         StepAdjustments:
         - MetricIntervalLowerBound: 0
-          ScalingAdjustment: 100
+          ScalingAdjustment: 200
 
 ######################
 # scale ECS service when service CPUUtilization increases
@@ -769,7 +769,7 @@ Resources:
         MetricAggregationType: Average
         StepAdjustments:
         - MetricIntervalLowerBound: 0
-          ScalingAdjustment: 100    
+          ScalingAdjustment: 200    
 
   ECSscalingPolicy03:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
@@ -800,7 +800,7 @@ Resources:
       StepAdjustments:   
         - MetricIntervalLowerBound: 0
           # MetricIntervalUpperBound: 60
-          ScalingAdjustment: 100        
+          ScalingAdjustment: 200        
   ASGscalingPolicy02:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
@@ -812,7 +812,7 @@ Resources:
       StepAdjustments:   
         - MetricIntervalLowerBound: 0
           # MetricIntervalUpperBound: 60
-          ScalingAdjustment: 100  
+          ScalingAdjustment: 200  
 
   ASGscalingPolicy03:
     Type: AWS::AutoScaling::ScalingPolicy
@@ -825,8 +825,33 @@ Resources:
       StepAdjustments:   
         - MetricIntervalLowerBound: 0
           # MetricIntervalUpperBound: 60
-          ScalingAdjustment: 100  
+          ScalingAdjustment: 200  
 
+  ASGscalingPolicy04:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: PercentChangeInCapacity
+      PolicyType: SimpleScaling
+      # Cooldown: 60
+      AutoScalingGroupName: !Ref ASGDefault
+      ScalingAdjustment: -30
+      # StepAdjustments:   
+      #   - MetricIntervalLowerBound: 0
+      #     # MetricIntervalUpperBound: 60
+      #     ScalingAdjustment: -30
+
+  ASGscalingPolicy05:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties: 
+      AdjustmentType: PercentChangeInCapacity
+      PolicyType: SimpleScaling
+      # Cooldown: 60
+      AutoScalingGroupName: !Ref ASGDefault
+      ScalingAdjustment: -30 
+      # StepAdjustments:   
+      #   - MetricIntervalLowerBound: 0
+      #     # MetricIntervalUpperBound: 60
+      #     ScalingAdjustment: -30
 
 ######################
 # Alarm to Scale ASG
@@ -850,9 +875,9 @@ Resources:
   ECSClusterCPURsvHighScaleOut:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '5'
       Statistic: Average
-      Threshold: '50'
+      Threshold: '70'
       AlarmDescription: Alarm if our ECS Cluster CPUReservation is high
       Period: '60'
       AlarmActions: [!Ref ASGscalingPolicy02]
@@ -866,9 +891,9 @@ Resources:
   ECSClusterMemRsvHighScaleOut:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '5'
       Statistic: Average
-      Threshold: '50'
+      Threshold: '60'
       AlarmDescription: Alarm if our ECS Cluster MemoryReservation is high
       Period: '60'
       AlarmActions: [!Ref ASGscalingPolicy03]
@@ -877,6 +902,39 @@ Resources:
       - Name: ClusterName
         Value: !Ref ECSDefaultCluster
       ComparisonOperator: GreaterThanOrEqualToThreshold
+      MetricName: MemoryReservation
+
+
+  ECSClusterCPURsvLowScaleIn:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '5'
+      Statistic: Average
+      Threshold: '20'
+      AlarmDescription: Alarm if our ECS Cluster CPUReservation is low
+      Period: '60'
+      AlarmActions: [!Ref ASGscalingPolicy04]
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: ClusterName
+        Value: !Ref ECSDefaultCluster
+      ComparisonOperator: LessThanOrEqualToThreshold
+      MetricName: CPUReservation
+
+  ECSClusterMemRsvLowScaleIn:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '5'
+      Statistic: Average
+      Threshold: '40'
+      AlarmDescription: Alarm if our ECS Cluster MemoryReservation is low
+      Period: '60'
+      AlarmActions: [!Ref ASGscalingPolicy05]
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: ClusterName
+        Value: !Ref ECSDefaultCluster
+      ComparisonOperator: LessThanOrEqualToThreshold
       MetricName: MemoryReservation
 
 #############################
