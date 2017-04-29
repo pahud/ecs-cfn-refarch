@@ -253,6 +253,33 @@ Resources:
         ManagedPolicyArns:
             - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole'   
 
+  ECSAutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: 
+                  - 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service:
+                    - application-autoscaling.amazonaws.com
+        Path: /
+        Policies:
+        - PolicyName: ecs-service-autoscaling
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - application-autoscaling:*
+              - cloudwatch:DescribeAlarms
+              - cloudwatch:PutMetricAlarm
+              - ecs:DescribeServices
+              - ecs:UpdateService
+              Resource: "*"
+  
+
   LambdaExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -657,6 +684,127 @@ Resources:
       Role: !Ref ECSServiceRole
       #TaskDefinition: !Ref ECSWebTD
       TaskDefinition: !Ref ECSCaddyTD
+
+  ECSscalableTarget:
+    DependsOn: ECSService
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 10
+      MinCapacity: 2
+      ResourceId: 
+        Fn::Join:
+          - ""
+          -
+            - "service/"
+            - !Ref ECSDefaultCluster
+            - "/"
+            - !GetAtt ECSService.Name
+      RoleARN: !GetAtt ECSAutoScalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+######################
+# scale ECS service when too many ALB 5XX error
+######################
+  ECSscalingPolicy01:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: "[+]TooManyALB5XX"
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ECSscalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        # AdjustmentType: ExactCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 200
+
+######################
+# scale ECS service when service CPUUtilization increases
+######################
+  ECSscalingPolicy02:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: "[+]ServiceCPUUtilHigh"
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ECSscalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: 200    
+
+  ECSscalingPolicy03:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: "[-]ServiceCPUUtilLow"
+      PolicyType: StepScaling
+      ScalingTargetId: !Ref ECSscalableTarget
+      StepScalingPolicyConfiguration:
+        AdjustmentType: PercentChangeInCapacity
+        Cooldown: 60
+        MetricAggregationType: Average
+        StepAdjustments:
+        - MetricIntervalLowerBound: 0
+          ScalingAdjustment: -50            
+
+
+  ALB500sAlarmScaleUp:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '10'
+      AlarmDescription: Alarm if our ALB generates too many HTTP 500s.
+      Period: '60'
+      AlarmActions: [!Ref ECSscalingPolicy01]
+      Namespace: AWS/ApplicationELB
+      Dimensions:
+      - Name: ECSService
+        Value: !Ref ECSService
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: HTTPCode_ELB_5XX_Count
+
+
+  ServiceCPUUtilAlarmScaleOut:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '60'
+      AlarmDescription: Alarm if our ECS Service CPU Utilization is too high
+      Period: '60'
+      AlarmActions: [!Ref ECSscalingPolicy02]
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref ECSService
+      - Name: ClusterName
+        Value: !Ref Cluster
+      ComparisonOperator: GreaterThanThreshold
+      MetricName: CPUUtilization
+
+  ServiceCPUUtilAlarmScaleIn:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      EvaluationPeriods: '1'
+      Statistic: Average
+      Threshold: '20'
+      AlarmDescription: Alarm if our ECS Service CPU Utilization is too low
+      Period: '60'
+      AlarmActions: [!Ref ECSscalingPolicy03]
+      Namespace: AWS/ECS
+      Dimensions:
+      - Name: ServiceName
+        Value: !Ref ECSService
+      - Name: ClusterName
+        Value: !Ref Cluster
+      ComparisonOperator: LessThanThreshold
+      MetricName: CPUUtilization
 
 Outputs:
   StackName:
