@@ -92,5 +92,7 @@ Amazon ECS supports many [docker log drivers](https://docs.docker.com/engine/adm
 
 All ECS Events from the ECS Cluster created by this cloudformation template will go to CloudWatch Events rule and then publish to SNS Topic. You can find the SNS Topic in the cloudformation outputs.
 
+Further reading:
 
+Monitor Cluster State with Amazon ECS Event Stream | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/monitor-cluster-state-with-amazon-ecs-event-stream/
 
