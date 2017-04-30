@@ -568,10 +568,23 @@ Resources:
           !Sub |
             #!/bin/bash
             yum update -y
+            yum install -y aws-cfn-bootstrap
             echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
+            # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ASGDefault --region ${AWS::Region} 
+
 
   ASGDefault:
     Type: "AWS::AutoScaling::AutoScalingGroup"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref ASGMinSize
+        MaxBatchSize: 1
+        PauseTime: PT15M
+        WaitOnResourceSignals: true
     Properties:
       AvailabilityZones:
         -
