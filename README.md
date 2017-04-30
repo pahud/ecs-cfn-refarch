@@ -90,7 +90,7 @@ Amazon ECS supports many [docker log drivers](https://docs.docker.com/engine/adm
 
 ## ECS Events
 
-All ECS Events from the ECS Cluster created by this cloudformation template will go to CloudWatch Event rule and then publish to SNS Topic. You can find the SNS Topic in the cloudformation outputs.
+All ECS Events from the ECS Cluster created by this cloudformation template will go to CloudWatch Events rule and then publish to SNS Topic. You can find the SNS Topic in the cloudformation outputs.
 
 
 
