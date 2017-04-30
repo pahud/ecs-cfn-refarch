@@ -1011,6 +1011,48 @@ Resources:
       ComparisonOperator: LessThanOrEqualToThreshold
       MetricName: CPUUtilization
 
+######################
+#  CWE 
+######################
+
+  ECSEventsRule:
+    Type: "AWS::Events::Rule"
+    Properties: 
+      Description: "all ECS events"
+      EventPattern:
+        source: 
+          - aws.ecs
+        detail-type:
+          - "ECS Task State Change"
+          - "ECS Container Instance State Change"
+        detail:
+          clusterArn: 
+            - !Ref ECSDefaultCluster
+      Name: !Sub "ECS-Events-${AWS::StackName}"
+      # RoleArn: String
+      # ScheduleExpression: String
+      # State: String
+      Targets:
+        - Arn: !Ref ECSEventsSNSTopic
+          Id: !Sub "ECS-Events-SNS-${AWS::StackName}"
+
+
+######################
+# SNS
+######################
+  ECSEventsSNSTopic:
+    Type: "AWS::SNS::Topic"
+    Properties: 
+      DisplayName: !Sub "ECS-Events-${AWS::StackName}"
+      # Subscription:
+      #   SNS Subscription
+      TopicName: !Sub "ECS-Events-${AWS::StackName}"
+
+
+
+######################
+# Outputs
+######################
 Outputs:
   StackName:
     Value:
@@ -1035,6 +1077,10 @@ Outputs:
         - 'http://${LBDNS}'
         -
           LBDNS: !GetAtt publicALB.DNSName
+
+  SNSTopic:
+    Value: !GetAtt ECSEventsSNSTopic.TopicName
+
   ECSServiceName: 
     Value: !GetAtt ECSService.Name
 
