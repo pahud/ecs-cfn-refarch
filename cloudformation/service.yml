@@ -211,9 +211,12 @@ Resources:
           }      
 
       Handler: "index.handler"
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Timeout: 300
       Role: !GetAtt LambdaExecutionRole.Arn
+      Tags:
+        - Key: custom:cloudformation:purpose
+          Value: AMIInfo
 
 
   AMIInfo:
