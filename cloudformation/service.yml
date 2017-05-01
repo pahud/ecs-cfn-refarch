@@ -732,6 +732,13 @@ Resources:
       Role: !Ref ECSServiceRole
       #TaskDefinition: !Ref ECSWebTD
       TaskDefinition: !Ref ECSCaddyTD
+      ServiceName: !Sub "${AppName}-${AWS::StackName}"
+      PlacementStrategies: 
+        - Type: spread
+          Field: attribute:ecs.availability-zone
+        - Type: spread
+          Field: host
+
 
   ECSscalableTarget:
     DependsOn: ECSService
