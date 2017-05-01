@@ -423,12 +423,14 @@ Resources:
   SgLB:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: "sg for LoadBalancer"
       GroupDescription: "sg for LoadBalancer"
       #VpcId: !ImportValue {"Fn::Sub" : "${VpcStackName}-VpcId"}
       VpcId: !Ref Vpc
   SgEC2:
     Type: AWS::EC2::SecurityGroup
     Properties:
+      GroupName: "sg for ec2"
       GroupDescription: "sg for ec2"
       #VpcId: !ImportValue {"Fn::Sub" : "${VpcStackName}-VpcId"}
       VpcId: !Ref Vpc
