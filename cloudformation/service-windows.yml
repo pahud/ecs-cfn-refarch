@@ -53,6 +53,14 @@ Parameters:
     Type: Number
     Description: instance count under AutoScalingGroup
     Default: 2
+  ASGMaxSize:
+    Type: Number
+    Description: max instance count under AutoScalingGroup
+    Default: 4
+  ASGMinSize:
+    Type: Number
+    Description: min instance count under AutoScalingGroup
+    Default: 2
   UseALB:
     Type: String
     AllowedValues: ["yes", "no"]
@@ -624,7 +632,7 @@ Resources:
             Register-ScheduledJob -Name $jobname -ScriptBlock $scriptblock -Trigger $trigger -ScheduledJobOption $options -RunNow
             Add-JobTrigger -Name $jobname -Trigger (New-JobTrigger -AtStartup -RandomDelay 00:1:00)
             # end script
-            cfn-init.exe -v -s ${AWS::StackId} -r ContainerInstances --region ${AWS::Region}
+            cfn-init.exe -v -s ${AWS::StackId} -r AWSLC --region ${AWS::Region}
             cfn-signal.exe -e $lastexitcode --stack ${AWS::StackName} --resource ASGDefault --region ${AWS::Region} 
 
             </powershell>
@@ -634,6 +642,15 @@ Resources:
 
   ASGDefault:
     Type: "AWS::AutoScaling::AutoScalingGroup"
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref ASGMinSize
+        MaxBatchSize: 1
+        PauseTime: PT15M
+        WaitOnResourceSignals: true
     Properties:
       AvailabilityZones:
         -
@@ -700,7 +717,7 @@ Resources:
           #     SourceVolume: "my-vol"
           #     ContainerPath: "/var/www/my-vol"
           Image: "microsoft/iis"
-          Cpu: "100"
+          Cpu: "512"
           PortMappings: 
             - 
               ContainerPort: 80
