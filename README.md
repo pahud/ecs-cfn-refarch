@@ -105,3 +105,5 @@ By default the ECS cluster in this refarch is provisioned by Autoscaling Group, 
 
 
 ![service autoscaling](Images/asg-or-spotfleet.png)
+
+When cloudformation provisions the ECS cluster with spot fleet, it will launch the spot instances with [Diversified Allocation Strategy](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-fleet-examples.html#fleet-config5) with instances type *m3.medium*, *m4.large* and *c4.large*. With the diversity of instance types and multi-AZ allocation, you would not risk losing all ECS cluster with the spot price is lower than the market price - the spot fleet will maintain the desired capacity for you.
