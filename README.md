@@ -1,6 +1,22 @@
 # ecs-cfn-refarch
 
+This is a Amazon EC2 Container Service reference architecture with cloudformation templates that will provision a complete ECS environment with many advanced optional features:
+
+1. standalone service-only ECS environment (simple provisioning)
+2. ECS Windows Container(simpole provisioning)
+3. ECS CI/CD with Code* and Cloudformation
+4. ECS Service Autoscaling and ECS instances host Autoscaling triggered by Cloudwatch alarms
+5. Log Consolidation with awslogs driver
+6. ECS Events to CloudWatch Events and eventually go to SNS
+7. Spot Fleet support
+8. [TBD] credentials management with EC2 Parameter Store
+
+
+
+
+
 ## service-only 
+
 This cloudformation template will provision common Amazon ECS infrastructure including:
 
 - VPC, IGW, subnets, routing tables, security groups
