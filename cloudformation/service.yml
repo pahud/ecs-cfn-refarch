@@ -79,7 +79,7 @@ Parameters:
   AutoscalingGroupOrSpotFleet:
     Type: String
     Default: "AutoscalingGroup"
-    Description: "select yes if you run this template standalone"
+    Description: "provision the ECS cluster with AutoscalingGroup or SpotFleet"
     AllowedValues:
       - "AutoscalingGroup"
       - "SpotFleet"
