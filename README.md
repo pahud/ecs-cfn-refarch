@@ -101,3 +101,7 @@ Monitor Cluster State with Amazon ECS Event Stream | AWS Compute Blog - https://
 ## Spot Fleet support
 
 By default the ECS cluster in this refarch is provisioned by Autoscaling Group, alternatively, you can select **SpotFleet** in **AutoscalingGroupOrSpotFleet** cloudformation parameter.
+
+
+
+![service autoscaling](Images/asg-or-spotfleet.png)
