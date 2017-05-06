@@ -963,7 +963,7 @@ Resources:
   ECSCaddyTD:
       Type: AWS::ECS::TaskDefinition
       Properties: 
-        Family: !Sub ${AppName}-${ECSDefaultCluster}-${AWS::StackName}
+        Family: !Sub ${AppName}-${ECSDefaultCluster}
         ContainerDefinitions: 
           - 
             Name: Caddy
