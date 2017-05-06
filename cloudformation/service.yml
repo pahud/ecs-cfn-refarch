@@ -573,6 +573,7 @@ Resources:
         - !Ref ECSServiceRoleForEC2
 
   SpotFleetInstanceProfile:
+    Condition: SpotFleetCond
     Type: "AWS::IAM::InstanceProfile"
     Properties: 
       Path: /
@@ -627,6 +628,7 @@ Resources:
 ###################
 
   SpotFleet:
+    Condition: SpotFleetCond
     Type: AWS::EC2::SpotFleet
     Properties:
       SpotFleetRequestConfigData:
