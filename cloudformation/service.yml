@@ -1267,7 +1267,7 @@ Resources:
       Namespace: AWS/ApplicationELB
       Dimensions:
       - Name: ECSService
-        Value: !Ref ECSService
+        Value: !GetAtt ECSService.Name
       ComparisonOperator: GreaterThanOrEqualToThreshold
       MetricName: HTTPCode_ELB_5XX_Count
 
@@ -1287,7 +1287,7 @@ Resources:
       Namespace: AWS/ECS
       Dimensions:
       - Name: ServiceName
-        Value: !Ref ECSService
+        Value: !GetAtt ECSService.Name
       - Name: ClusterName
         Value: !Ref ECSDefaultCluster
       ComparisonOperator: GreaterThanOrEqualToThreshold
@@ -1305,7 +1305,7 @@ Resources:
       Namespace: AWS/ECS
       Dimensions:
       - Name: ServiceName
-        Value: !Ref ECSService
+        Value: !GetAtt ECSService.Name
       - Name: ClusterName
         Value: !Ref ECSDefaultCluster
       ComparisonOperator: LessThanOrEqualToThreshold
