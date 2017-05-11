@@ -900,11 +900,11 @@ Resources:
             - "${StackName}-ecs-instance"
             - StackName: !Ref AWS::StackName
           PropagateAtLaunch: true
-      TargetGroupARNs:
-        !If 
-          - UseALBCond
-          - [ !Ref publicALBTargetGroup ]
-          - !Ref AWS::NoValue
+      # TargetGroupARNs:
+      #   !If 
+      #     - UseALBCond
+      #     - [ !Ref publicALBTargetGroup ]
+      #     - !Ref AWS::NoValue
       VPCZoneIdentifier:
         - !Ref PublicZoneA
         - !Ref PublicZoneB
