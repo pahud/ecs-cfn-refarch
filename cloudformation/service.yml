@@ -225,31 +225,32 @@ Resources:
 
       Handler: "index.handler"
       Runtime: nodejs6.10
+      Description: "Query the latest ECS AMI for Cloudformation template"
       Timeout: 300
       Role: !GetAtt LambdaExecutionRole.Arn
       Tags:
         - Key: custom:cloudformation:purpose
           Value: AMIInfo
 
-  LambdaFunctionForASG:
+  LambdaAsgECSDraining:
     Type: "AWS::Lambda::Function"
     Properties:
       Code:
         S3Bucket: !Ref S3BucketName
         S3Key: "index.zip"
-      Description: Lambda code for the autoscaling hook triggers invoked when autoscaling events of launching and terminating instance occur
+      Description: Handling the ECS container draining and Autoscaling Group scale in with Lifecycle hooks
       Handler: "index.lambda_handler"
       Role:
           Fn::GetAtt:
             - "SNSLambdaExecutionRole"
             - "Arn"
-      Runtime: "python2.7"
+      Runtime: "python3.6"
       Timeout: "300"
 
   LambdaInvokePermission:
     Type: "AWS::Lambda::Permission"
     Properties:
-       FunctionName: !Ref LambdaFunctionForASG
+       FunctionName: !Ref LambdaAsgECSDraining
        Action: lambda:InvokeFunction
        Principal: "sns.amazonaws.com"
        SourceArn: !Ref ASGSNSTopic
@@ -1471,10 +1472,10 @@ Resources:
         -
           Endpoint:
              Fn::GetAtt:
-                - "LambdaFunctionForASG"
+                - "LambdaAsgECSDraining"
                 - "Arn"
           Protocol: "lambda"
-    DependsOn: "LambdaFunctionForASG"
+    DependsOn: "LambdaAsgECSDraining"
 
 ######################
 # Outputs
