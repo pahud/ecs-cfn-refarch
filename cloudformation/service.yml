@@ -1237,9 +1237,9 @@ Resources:
     Condition: EnableASGCond
     Type: AWS::CloudWatch::Alarm
     Properties:
-      EvaluationPeriods: '5'
+      EvaluationPeriods: '20'
       Statistic: Average
-      Threshold: '40'
+      Threshold: '20'
       AlarmDescription: Alarm if our ECS Cluster MemoryReservation is low
       Period: '60'
       AlarmActions: [!Ref ASGscalingPolicy05]
