@@ -86,8 +86,8 @@ Parameters:
   S3BucketName:
     Type: String
     Description: >
-      REQUIRED - Specifies the name of your AWS account S3 bucket in which the index.zip file is stored. index.zip contains the Python Lambda code index.py; Please download this from https://github.com/pahud/ecs-cfn-refarch/blob/master/lambdaFunctions/ecs_container_draining and upload to your S3 bucket.
-
+      OPTIONAL - Specifies the name of your AWS account S3 bucket in which the index.zip file is stored. index.zip contains the Python Lambda code index.py; Please download this from https://github.com/pahud/ecs-cfn-refarch/blob/master/lambdaFunctions/ecs_container_draining and upload to your S3 bucket.
+    Default: ""
 
 Conditions:
   HasSshKeyName: !Not [ !Equals [!Ref SshKeyName, NoValue] ]
@@ -98,6 +98,7 @@ Conditions:
   EnableASGCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "AutoscalingGroup" ]
   DisableASGCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "SpotFleet" ]
   SpotFleetCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "SpotFleet" ]
+  ECSLambdaDrainCond: !Not [ !Equals [ !Ref S3BucketName, "" ] ]
 
 
 
@@ -233,6 +234,7 @@ Resources:
           Value: AMIInfo
 
   LambdaAsgECSDraining:
+    Condition: ECSLambdaDrainCond
     Type: "AWS::Lambda::Function"
     Properties:
       Code:
@@ -248,6 +250,7 @@ Resources:
       Timeout: "300"
 
   LambdaInvokePermission:
+    Condition: ECSLambdaDrainCond
     Type: "AWS::Lambda::Permission"
     Properties:
        FunctionName: !Ref LambdaAsgECSDraining
@@ -981,12 +984,20 @@ Resources:
           - !Ref ASGDesiredCapacity
           - 0
       NotificationConfigurations:
-        - TopicARN: !Ref ASGSNSTopic
-          NotificationTypes:
-          - autoscaling:EC2_INSTANCE_LAUNCH
-          - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
-          - autoscaling:EC2_INSTANCE_TERMINATE
-          - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+        - !If  
+          - ECSLambdaDrainCond
+          - TopicARN: !Ref ASGSNSTopic
+            NotificationTypes:
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+          - TopicARN: !Ref EmptySNSTopic
+            NotificationTypes:
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
       # PlacementGroup: String
       Tags:
         - 
@@ -1016,6 +1027,7 @@ Resources:
       ClusterName: !Sub ${AWS::StackName}-ecs-cluster
 
   ASGTerminateHook:
+    Condition: ECSLambdaDrainCond
     Type: "AWS::AutoScaling::LifecycleHook"
     Properties:
       AutoScalingGroupName: !Ref ASGDefault
@@ -1466,16 +1478,22 @@ Resources:
       TopicName: !Sub "ECS-Events-${AWS::StackName}"
 
   ASGSNSTopic:
+    Condition: ECSLambdaDrainCond
     Type: "AWS::SNS::Topic"
     Properties:
       Subscription:
         -
           Endpoint:
-             Fn::GetAtt:
+            Fn::GetAtt:
                 - "LambdaAsgECSDraining"
                 - "Arn"
           Protocol: "lambda"
-    DependsOn: "LambdaAsgECSDraining"
+    DependsOn: LambdaAsgECSDraining
+
+  # for placeholder
+  EmptySNSTopic:
+    Type: "AWS::SNS::Topic"
+
 
 ######################
 # Outputs
