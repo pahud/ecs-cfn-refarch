@@ -145,7 +145,7 @@ $ ssm put-parameter --name ECSYourPassword --value password1234 --type SecureStr
 
 And you can specify the optional "**ECSYourName**" in the cloudformation input parameter.
 
-When the stack is created completed, try opening the URL
+When the stack is created, try open the teting URL:
 
 ```
 http://Your_LoadBalancerURL_IN_CloudFormation_Output/greeting.html
@@ -155,7 +155,7 @@ and you should be able to see this:
 
 ![service autoscaling](Images/greeting-screenshot.png)
 
-check this bootstrap startup.sh to see how it generate the credentials within the ECS Task.
+you can check this bootstrap ***startup.sh*** to see how it generates the credentials within the ECS Task.
 https://github.com/pahud/docker-caddy/blob/master/startup.sh
 
 ###### Reference
