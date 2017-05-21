@@ -9,8 +9,8 @@ This is a Amazon EC2 Container Service reference architecture with cloudformatio
 5. Log Consolidation with awslogs driver
 6. ECS Events to CloudWatch Events and eventually go to SNS
 7. Spot Fleet support
-8. **[NEW] ASG scaling in triggering ECS container instance draining**([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
-9. **[TBD] credentials management with EC2 Parameter Store**([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
+8. ASG scaling in triggering ECS container instance draining([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
+9. **[NEW] credentials management with EC2 Parameter Store**([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
 
 
 
