@@ -88,6 +88,17 @@ Parameters:
     Description: >
       OPTIONAL - Specifies the name of your AWS account S3 bucket in which the index.zip file is stored. index.zip contains the Python Lambda code index.py; Please download this from https://github.com/pahud/ecs-cfn-refarch/blob/master/lambdaFunctions/ecs_container_draining and upload to your S3 bucket.
     Default: ""
+  ParameterStoreYourName:
+    Type: String
+    Default: "EmptyName"
+    Description: >
+      OPTIONAL - parameter string stored in EC2 Parameter Store
+  # ParameterStoreYourSecret:
+  #   Type: String
+  #   Default: "EmptySecret"
+  #   Description: >
+  #     OPTIONAL - parameter secret string stored in EC2 Parameter Store
+
 
 Conditions:
   HasSshKeyName: !Not [ !Equals [!Ref SshKeyName, NoValue] ]
@@ -103,6 +114,24 @@ Conditions:
 
 
 Resources:
+###################
+# EC2 Parameter Store
+###################
+  ParameterYourName:
+    Type: "AWS::SSM::Parameter"
+    Properties: 
+      Name: ECSYourName
+      Description: "Your Name saved in EC2 Parameter Store"
+      Type: String
+      Value: !Ref ParameterStoreYourName
+  # ParameterStoreYourSecret:
+  #   Type: "AWS::SSM::Parameter"
+  #   Properties: 
+  #     Name: YourSecret
+  #     Description: "Your Secret saved in EC2 Parameter Store"
+  #     Type: String
+  #     Value: String
+
 ###################
 # AMI INFO Function
 ###################
@@ -324,6 +353,31 @@ Resources:
         Path: /
         ManagedPolicyArns:
             - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole'   
+
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: 
+                  - 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service:
+                    - ecs-tasks.amazonaws.com
+        Path: /
+        # ManagedPolicyArns:
+        #     - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole' 
+        Policies:
+        - PolicyName: ecs-task-get-parameters
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - ssm:GetParameters
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECS*"
 
 
   ECSAutoScalingRole:
@@ -1091,6 +1145,7 @@ Resources:
   ECSCaddyTD:
       Type: AWS::ECS::TaskDefinition
       Properties: 
+        TaskRoleArn: !GetAtt ECSTaskRole.Arn
         Family: !Sub ${AppName}-${ECSDefaultCluster}
         ContainerDefinitions: 
           - 
