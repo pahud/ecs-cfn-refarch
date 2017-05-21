@@ -10,7 +10,7 @@ This is a Amazon EC2 Container Service reference architecture with cloudformatio
 6. ECS Events to CloudWatch Events and eventually go to SNS
 7. Spot Fleet support
 8. **[NEW] ASG scaling in triggering ECS container instance draining**([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
-9. [TBD] credentials management with EC2 Parameter Store([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
+9. **[TBD] credentials management with EC2 Parameter Store**([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
 
 
 
@@ -132,3 +132,32 @@ When cloudformation provisions the ECS cluster with spot fleet, it will launch t
 ###### Reference
 
 Powering your Amazon ECS Clusters with Spot Fleet | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/powering-your-amazon-ecs-clusters-with-spot-fleet/
+
+
+
+## credentials management with EC2 Parameter Store
+
+By lauching the cloudformation template, it will provision an EC2 Parameter "**ECSYourName**" in Parameter Store for you alone with KMS Key and Alias(**alias/myEcsKeyAlias**).  To create a new parameter with KMS encrypted, try the following commands:
+
+```
+$ ssm put-parameter --name ECSYourPassword --value password1234 --type SecureString --key-id alias/myEcsKeyAlias
+```
+
+And you can specify the optional "**ECSYourName**" in the cloudformation input parameter.
+
+When the stack is created completed, try opening the URL
+
+```
+http://Your_LoadBalancerURL_IN_CloudFormation_Output/greeting.html
+```
+
+and you should be able to see this:
+
+![service autoscaling](Images/greeting-screenshot.png)
+
+check this bootstrap startup.sh to see how it generate the credentials within the ECS Task.
+https://github.com/pahud/docker-caddy/blob/master/startup.sh
+
+###### Reference
+
+Managing Secrets for Amazon ECS Applications Using Parameter Store and IAM Roles for Tasks | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/

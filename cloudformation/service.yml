@@ -310,6 +310,57 @@ Resources:
 
 
 #######################
+#   KMS
+#######################
+
+  myKey: 
+    Type: "AWS::KMS::Key"
+    Properties: 
+      Description: "key or EC2 Parameter Store"
+      KeyPolicy: 
+        Version: "2012-10-17"
+        Id: "key-default-1"
+        Statement: 
+          - 
+            Sid: "Allow administration of the key"
+            Effect: "Allow"
+            Principal: 
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 
+              - "kms:Create*"
+              - "kms:Describe*"
+              - "kms:Enable*"
+              - "kms:List*"
+              - "kms:Put*"
+              - "kms:Update*"
+              - "kms:Revoke*"
+              - "kms:Disable*"
+              - "kms:Get*"
+              - "kms:Delete*"
+              - "kms:ScheduleKeyDeletion"
+              - "kms:CancelKeyDeletion"
+            Resource: "*"
+          - 
+            Sid: "Allow use of the key"
+            Effect: "Allow"
+            Principal: 
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: 
+              - "kms:Encrypt"
+              - "kms:Decrypt"
+              - "kms:ReEncrypt*"
+              - "kms:GenerateDataKey*"
+              - "kms:DescribeKey"
+            Resource: "*"
+
+  myEcsKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/myEcsKeyAlias
+      TargetKeyId:
+        Ref: myKey
+
+#######################
 #   IAM
 #######################
 
@@ -378,7 +429,13 @@ Resources:
               Action:
               - ssm:GetParameters
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECS*"
-
+        - PolicyName: ecs-task-decrypt-kms
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - kms:Decrypt
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${myKey}"
 
   ECSAutoScalingRole:
     Type: AWS::IAM::Role
@@ -1155,7 +1212,8 @@ Resources:
             Image:
               !If
                 - UseBuiltInTaskDefinitionCond
-                - "abiosoft/caddy:php"
+                # - "abiosoft/caddy:php"
+                - "pahud/caddy"
                 - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
             Cpu: "512"
             PortMappings: 
