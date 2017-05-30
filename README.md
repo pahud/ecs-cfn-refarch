@@ -52,6 +52,12 @@ For **Amazon ECS Windows Container**, please click the button below:
 
 This lab will provision a ECS CI/CD environment with Canary deployment support(see slide [#36](https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks#36) [#37](https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks#37) [#38](https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks#38))
 
+
+
+![service autoscaling](Images/Lab02-0.png)
+
+
+
 #### 1. Fork the GitHub repository
 
 [Fork](https://help.github.com/articles/fork-a-repo/) this GitHub repository(https://github.com/pahud/ecs-cfn-refarch) into your GitHub account.
