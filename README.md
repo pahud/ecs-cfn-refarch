@@ -16,7 +16,7 @@ This is a Amazon EC2 Container Service reference architecture with cloudformatio
 
 
 
-## service-only 
+## Lab1 - service-only 
 
 This cloudformation template will provision common Amazon ECS infrastructure including:
 
@@ -34,6 +34,10 @@ click the button to launch the demo stack in *us-west-2*
 
 check the cloudformation output and click the ***LoadBalancerURL*** link to see the result.
 
+
+
+## Lab2 - Windows Container
+
 For **Amazon ECS Windows Container**, please click the button below:
 
 [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=ecs-win-refarch&templateURL=https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/service-windows.yml)
@@ -44,9 +48,9 @@ For **Amazon ECS Windows Container**, please click the button below:
 
 
 
-## complete stack for CI/CD with Amazon ECS
+## Lab3 - complete stack for CI/CD with Amazon ECS
 
-
+This lab will provision a ECS CI/CD environment with Canary deployment support(see slide [#36](https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks#36) [#37](https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks#37) [#38](https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks#38))
 
 #### 1. Fork the GitHub repository
 
@@ -82,8 +86,34 @@ The CloudFormation template requires the following parameters:
   - **UseCodeCommit**: If you use CodeCommit instead, select **"yes"** and ignore all GithHub parameters above.
 
 
+#### 3. Trigger the CodePipeline for the 1st time
 
-## Scaling from ECS Service Autoscaling
+By triggering the CodePipeline for the 1st time, it will privision the Beta and Production environment for you.
+
+
+
+After the 1st run of CodePipeline is completed, edit the CodePipeline, click the pencil icon of **ProdCanary** stage:
+
+![service autoscaling](Images/Lab02-1.png)
+
+
+
+Click **Advance** and edit the **Parameter overrides**, remove the **"Tag": { …}** attribute and value, leaving other attributes as default:
+
+![service autoscaling](Images/Lab02-2.png)
+
+
+
+#### 4. Trigger the CodePipeline for the 2nd time
+
+Modify the src/index.php in the local repository, git commit and git push to the repository(github or codecommit). This will trigger the CodePipeline again. When the pipeline goes to the ProdCanary stage, it will update the Canary ECS service only, leaving the existing ECS service unchanged. And when it moves to RemoveCanary stage, it will updat the existing production ECS service with the same version as the canary and remove the canary ECS service completely.
+
+###### Reference
+
+Building a CICD Pipeline for Container Deployment to Amazon ECS - May… - https://www.slideshare.net/AmazonWebServices/building-a-cicd-pipeline-for-container-deployment-to-amazon-ecs-may-2017-aws-online-tech-talks
+
+
+## Lab4 - Scaling from ECS Service Autoscaling
 
 The Cloudformation template will generate a few Service Autoscaling policies for you:
 
@@ -99,13 +129,13 @@ The Autoscaling Group will scale out when:
 
 **UPDATE** - This refarch will configure the hosts scaling policies just as [Expedia's sharing](https://twitter.com/pahudnet/status/858450488609480704) in AWS Summit Santa Clara 2016([video](https://youtu.be/7r4_Ne7v38o?t=30m53s)).
 
-## Log consolidation
+## Lab5 - Log consolidation
 
 Amazon ECS supports many [docker log drivers](https://docs.docker.com/engine/admin/logging/overview/#supported-logging-drivers), by default, this refarch will use [awslogs](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/using_awslogs.html) and output consolidated logs to Amazon CloudWatch Logs.
 
 
 
-## ECS Events
+## Lab6 - ECS Events and SNS Notifications
 
 All ECS Events from the ECS Cluster created by this cloudformation template will go to CloudWatch Events rule and then publish to SNS Topic. You can find the SNS Topic in the cloudformation outputs.
 
@@ -117,7 +147,7 @@ Monitor Cluster State with Amazon ECS Event Stream | AWS Compute Blog - https://
 
 
 
-## Spot Fleet support
+## Lab7 - Spot Fleet support
 
 By default the ECS cluster in this refarch is provisioned by Autoscaling Group, alternatively, you can select **SpotFleet** in **AutoscalingGroupOrSpotFleet** cloudformation parameter.
 
@@ -135,7 +165,17 @@ Powering your Amazon ECS Clusters with Spot Fleet | AWS Compute Blog - https://a
 
 
 
-## credentials management with EC2 Parameter Store
+## Lab8 - ASG scaling in with ECS container instance draining
+
+Check the following reference link. By launching this cloudformation stack with Autoscaling Group support, when Autosaling Group scaling in the instances, the Autoscaling LifeCycle event will trigger the Lambda function to perform ECS Container Draining in prior to the host termination by Autoscaling Group.
+
+###### reference
+
+How to Automate Container Instance Draining in Amazon ECS | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/
+
+
+
+## Lab9 - credentials management with EC2 Parameter Store
 
 By lauching the cloudformation template, it will provision an EC2 Parameter "**ECSYourName**" in Parameter Store for you alone with KMS Key and Alias(**alias/myEcsKeyAlias**).  To create a new parameter with KMS encrypted, try the following commands:
 
