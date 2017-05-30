@@ -1655,6 +1655,10 @@ Outputs:
   ECSServiceName: 
     Value: !GetAtt ECSService.Name
 
+  ECSTaskDefImageTag:
+    Value: !Ref Tag
+    Export:
+      Name: !Sub "${AWS::StackName}-Tag"
 
   PublicZoneA:
     Value:
