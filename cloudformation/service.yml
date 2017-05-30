@@ -70,6 +70,9 @@ Parameters:
   ServiceDesiredCount:
     Type: Number
     Default: 2
+  IsWithCanary:
+    Type: Number
+    Default: 0
   CanaryDesiredCount:
     Type: Number
     Default: 0
@@ -116,7 +119,7 @@ Conditions:
   SpotFleetCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "SpotFleet" ]
   ECSLambdaDrainCond: !Not [ !Equals [ !Ref S3BucketName, "" ] ]
   EmptyCanaryTag: !Equals [ !Ref CanaryTag, "" ]
-
+  EmptyTag: !Equals [ !Ref Tag, "" ]
 
 
 Resources:
