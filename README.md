@@ -112,7 +112,7 @@ Click **Advance** and edit the **Parameter overrides**, remove the **"Tag": { â€
 
 #### 4. Trigger the CodePipeline for the 2nd time
 
-Modify the src/index.php in the local repository, git commit and git push to the repository(github or codecommit). This will trigger the CodePipeline again. When the pipeline goes to the ProdCanary stage, it will update the Canary ECS service only, leaving the existing ECS service unchanged. And when it moves to RemoveCanary stage, it will updat the existing production ECS service with the same version as the canary and remove the canary ECS service completely.
+Modify the ***src/index.php*** in the local repository, **git commit** and **git push** to the remote repository(github or codecommit). This will trigger the CodePipeline again. When the pipeline goes to the **ProdCanary** stage, it will update the Canary ECS service only, leaving the existing ECS service unchanged. And when it moves to **RemoveCanary** stage, it will updat the existing production ECS service with the same version as the canary and remove the canary ECS service completely(set the desired ECS task count of canary to 0).
 
 ###### Reference
 
