@@ -355,18 +355,17 @@ Resources:
                         - Name: SourceZip
                         - Name: BuildOutput
                       RunOrder: 1
+                # - Name: ApprovalCanary
+                #   Actions:
+                #     - Name: DeploymentApproval
+                #       ActionTypeId:
+                #         Category: Approval
+                #         Owner: AWS
+                #         Provider: Manual
+                #         Version: 1
+                #       RunOrder: 1                
 
-                - Name: Approval
-                  Actions:
-                    - Name: DeploymentApproval
-                      ActionTypeId:
-                        Category: Approval
-                        Owner: AWS
-                        Provider: Manual
-                        Version: 1
-                      RunOrder: 1                
-
-                - Name: Prod
+                - Name: ProdCanary
                   Actions:
                     - Name: CreateUpdateProd
                       ActionTypeId:
@@ -387,17 +386,85 @@ Resources:
                             "SpotPrice": "0.1",
                             "ASGDesiredCapacity": "2",
                             "UseBuiltInTaskDefinition": "no",
+                            "CanaryTag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
                             "ServiceDesiredCount": "2",
+                            "CanaryDesiredCount": "1",
                             "MaxPercent": "200",
-                            "MinPercent": "100"                            
+                            "MinPercent": "100"  
                           }
                       InputArtifacts:
                         - Name: SourceZip
                         - Name: BuildOutput
                       RunOrder: 1
 
+                # - Name: Approval
+                #   Actions:
+                #     - Name: DeploymentApproval
+                #       ActionTypeId:
+                #         Category: Approval
+                #         Owner: AWS
+                #         Provider: Manual
+                #         Version: 1
+                #       RunOrder: 1                
+
+                # - Name: Prod
+                #   Actions:
+                #     - Name: CreateUpdateProd
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CREATE_UPDATE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Prod'
+                #         # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                #         TemplatePath: SourceZip::cloudformation/service.yml
+                #         Capabilities: CAPABILITY_IAM
+                #         #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                #         ParameterOverrides: !Sub |
+                #           {
+                #             "SpotPrice": "0.1",
+                #             "ASGDesiredCapacity": "2",
+                #             "UseBuiltInTaskDefinition": "no",
+                #             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
+                #             "Repository": "${EcrRepository}",
+                #             "ServiceDesiredCount": "2",
+                #             "MaxPercent": "200",
+                #             "MinPercent": "100"                            
+                #           }
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #         - Name: BuildOutput
+                #       RunOrder: 1
+
+                - Name: RemoveCanary
+                  Actions:
+                    - Name: CreateUpdateProd
+                      ActionTypeId:
+                        Category: Deploy
+                        Owner: AWS
+                        Provider: CloudFormation
+                        Version: 1
+                      Configuration:
+                        ActionMode: CREATE_UPDATE
+                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                        StackName: !Sub '${ServiceName}-Prod'
+                        # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                        TemplatePath: SourceZip::cloudformation/service.yml
+                        Capabilities: CAPABILITY_IAM
+                        #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                        ParameterOverrides: !Sub |
+                          {
+                            "CanaryDesiredCount": "0"
+                          }
+                      InputArtifacts:
+                        - Name: SourceZip
+                        - Name: BuildOutput
+                      RunOrder: 1
 
 #
 #  CoePipeline using CodeCommit as source                         
@@ -463,7 +530,7 @@ Resources:
                             "UseBuiltInTaskDefinition": "no",
                             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
-                            "ServiceDesiredCount": "1",
+                            "ServiceDesiredCount": "2",
                             "MaxPercent": "200",
                             "MinPercent": "50"                            
                           }
@@ -508,6 +575,7 @@ Resources:
                             "ASGDesiredCapacity": "2",
                             "UseBuiltInTaskDefinition": "no",
                             "CanaryTag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
+                            "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
                             "Repository": "${EcrRepository}",
                             "ServiceDesiredCount": "2",
                             "CanaryDesiredCount": "1",
@@ -529,38 +597,39 @@ Resources:
                 #         Version: 1
                 #       RunOrder: 1                
 
-                - Name: Prod
-                  Actions:
-                    - Name: CreateUpdateProd
-                      ActionTypeId:
-                        Category: Deploy
-                        Owner: AWS
-                        Provider: CloudFormation
-                        Version: 1
-                      Configuration:
-                        ActionMode: CREATE_UPDATE
-                        RoleArn: !GetAtt CloudFormationExecutionRole.Arn
-                        StackName: !Sub '${ServiceName}-Prod'
-                        # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
-                        TemplatePath: SourceZip::cloudformation/service.yml
-                        Capabilities: CAPABILITY_IAM
-                        #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
-                        ParameterOverrides: !Sub |
-                          {
-                            "SpotPrice": "0.1",
-                            "ASGDesiredCapacity": "2",
-                            "UseBuiltInTaskDefinition": "no",
-                            "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
-                            "Repository": "${EcrRepository}",
-                            "ServiceDesiredCount": "2",
-                            "CanaryDesiredCount": "1",
-                            "MaxPercent": "200",
-                            "MinPercent": "100"  
-                          }
-                      InputArtifacts:
-                        - Name: SourceZip
-                        - Name: BuildOutput
-                      RunOrder: 1
+                # - Name: Prod
+                #   Actions:
+                #     - Name: CreateUpdateProd
+                #       ActionTypeId:
+                #         Category: Deploy
+                #         Owner: AWS
+                #         Provider: CloudFormation
+                #         Version: 1
+                #       Configuration:
+                #         ActionMode: CREATE_UPDATE
+                #         RoleArn: !GetAtt CloudFormationExecutionRole.Arn
+                #         StackName: !Sub '${ServiceName}-Prod'
+                #         # ChangeSetName: !Sub '${ServiceName}-ChangeSet-Prod'
+                #         TemplatePath: SourceZip::cloudformation/service.yml
+                #         Capabilities: CAPABILITY_IAM
+                #         #ParameterOverrides: '{ "ASGDesiredCapacity": "2" }'
+                #         ParameterOverrides: !Sub |
+                #           {
+                #             "SpotPrice": "0.1",
+                #             "ASGDesiredCapacity": "2",
+                #             "UseBuiltInTaskDefinition": "no",
+                #             "Tag" : { "Fn::GetParam" : [ "BuildOutput", "build.json", "tag" ] },
+                #             "Repository": "${EcrRepository}",
+                #             "ServiceDesiredCount": "2",
+                #             "CanaryDesiredCount": "1",
+                #             "MaxPercent": "200",
+                #             "MinPercent": "100"  
+                #           }
+                #       InputArtifacts:
+                #         - Name: SourceZip
+                #         - Name: BuildOutput
+                #       RunOrder: 1
+
                 # - Name: ApprovalRemoveCanary
                 #   Actions:
                 #     - Name: DeploymentApproval
