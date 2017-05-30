@@ -476,15 +476,15 @@ Resources:
                         - Name: BuildOutput
                       RunOrder: 1
 
-                - Name: ApprovalCanary
-                  Actions:
-                    - Name: DeploymentApproval
-                      ActionTypeId:
-                        Category: Approval
-                        Owner: AWS
-                        Provider: Manual
-                        Version: 1
-                      RunOrder: 1                
+                # - Name: ApprovalCanary
+                #   Actions:
+                #     - Name: DeploymentApproval
+                #       ActionTypeId:
+                #         Category: Approval
+                #         Owner: AWS
+                #         Provider: Manual
+                #         Version: 1
+                #       RunOrder: 1                
 
                 - Name: ProdCanary
                   Actions:
@@ -519,15 +519,15 @@ Resources:
                         - Name: BuildOutput
                       RunOrder: 1
 
-                - Name: Approval
-                  Actions:
-                    - Name: DeploymentApproval
-                      ActionTypeId:
-                        Category: Approval
-                        Owner: AWS
-                        Provider: Manual
-                        Version: 1
-                      RunOrder: 1                
+                # - Name: Approval
+                #   Actions:
+                #     - Name: DeploymentApproval
+                #       ActionTypeId:
+                #         Category: Approval
+                #         Owner: AWS
+                #         Provider: Manual
+                #         Version: 1
+                #       RunOrder: 1                
 
                 - Name: Prod
                   Actions:
@@ -561,15 +561,15 @@ Resources:
                         - Name: SourceZip
                         - Name: BuildOutput
                       RunOrder: 1
-                - Name: ApprovalRemoveCanary
-                  Actions:
-                    - Name: DeploymentApproval
-                      ActionTypeId:
-                        Category: Approval
-                        Owner: AWS
-                        Provider: Manual
-                        Version: 1
-                      RunOrder: 1                
+                # - Name: ApprovalRemoveCanary
+                #   Actions:
+                #     - Name: DeploymentApproval
+                #       ActionTypeId:
+                #         Category: Approval
+                #         Owner: AWS
+                #         Provider: Manual
+                #         Version: 1
+                #       RunOrder: 1                
 
                 - Name: RemoveCanary
                   Actions:
