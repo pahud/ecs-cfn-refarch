@@ -16,7 +16,6 @@ Mappings:
 
 Parameters:
   SshKeyName:
-    # Type: AWS::EC2::KeyPair::KeyName
     Type: String
     Description: Optional - Name of an existing EC2 KeyPair to enable SSH access to the ECS instances. Set to 'NoValue' if no SSH key is required.
     Default: NoValue
@@ -101,11 +100,6 @@ Parameters:
     Default: "EmptyName"
     Description: >
       OPTIONAL - parameter string stored in EC2 Parameter Store
-  # ParameterStoreYourSecret:
-  #   Type: String
-  #   Default: "EmptySecret"
-  #   Description: >
-  #     OPTIONAL - parameter secret string stored in EC2 Parameter Store
 
 
 Conditions:
@@ -134,143 +128,15 @@ Resources:
       Description: "Your Name saved in EC2 Parameter Store"
       Type: String
       Value: !Ref ParameterStoreYourName
-  # ParameterStoreYourSecret:
-  #   Type: "AWS::SSM::Parameter"
-  #   Properties: 
-  #     Name: YourSecret
-  #     Description: "Your Secret saved in EC2 Parameter Store"
-  #     Type: String
-  #     Value: String
 
-###################
-# AMI INFO Function
-###################
-  AMIInfoFunction:
-    Type: AWS::Lambda::Function
+
+  AMIInfoStack:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      Code:
-        ZipFile: >
-          
-          //A sample Lambda function that looks up the latest AMI ID for a given region and architecture.
-
-          // Map instance architectures to an AMI name pattern
-
-          var archToAMINamePattern = {
-              "PV64": "amzn-ami-pv*x86_64-ebs",
-              "HVM64": "amzn-ami-hvm*x86_64-gp2",
-              "HVMG2": "amzn-ami-graphics-hvm*x86_64-ebs*",
-              "ECS": "amzn-ami-*amazon-ecs-optimized"
-          };
-
-          var aws = require("aws-sdk");
-          
-          exports.handler = function(event, context) {
-          
-              console.log("REQUEST RECEIVED:\n" + JSON.stringify(event));
-              
-              // For Delete requests, immediately send a SUCCESS response.
-              if (event.RequestType == "Delete") {
-                  sendResponse(event, context, "SUCCESS");
-                  return;
-              }
-          
-              var responseStatus = "FAILED";
-              var responseData = {};
-          
-              var ec2 = new aws.EC2({region: event.ResourceProperties.Region});
-              var describeImagesParams = {
-                  Filters: [{ Name: "name", Values: [archToAMINamePattern[event.ResourceProperties.Architecture]]}],
-                  Owners: [event.ResourceProperties.Architecture == "HVMG2" ? "679593333241" : "amazon"]
-              };
-          
-              // Get AMI IDs with the specified name pattern and owner
-
-              ec2.describeImages(describeImagesParams, function(err, describeImagesResult) {
-                  if (err) {
-                      responseData = {Error: "DescribeImages call failed"};
-                      console.log(responseData.Error + ":\n", err);
-                  }
-                  else {
-                      var images = describeImagesResult.Images;
-                      // Sort images by name in decscending order. The names contain the AMI version, formatted as YYYY.MM.Ver.
-                      images.sort(function(x, y) { return y.Name.localeCompare(x.Name); });
-                      for (var j = 0; j < images.length; j++) {
-                          if (isBeta(images[j].Name)) continue;
-                          responseStatus = "SUCCESS";
-                          responseData["Id"] = images[j].ImageId;
-                          break;
-                      }
-                  }
-                  sendResponse(event, context, responseStatus, responseData);
-              });
-          };
-
-          // Check if the image is a beta or rc image. The Lambda function won't return any of those images.
-
-          function isBeta(imageName) {
-              return imageName.toLowerCase().indexOf("beta") > -1 || imageName.toLowerCase().indexOf(".rc") > -1;
-          }
+      TemplateURL: https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/AMIInfo.yml
+      TimeoutInMinutes: 5
 
 
-          // Send response to the pre-signed S3 URL 
-
-          function sendResponse(event, context, responseStatus, responseData) {
-          
-              var responseBody = JSON.stringify({
-                  Status: responseStatus,
-                  Reason: "See the details in CloudWatch Log Stream: " + context.logStreamName,
-                  PhysicalResourceId: context.logStreamName,
-                  StackId: event.StackId,
-                  RequestId: event.RequestId,
-                  LogicalResourceId: event.LogicalResourceId,
-                  Data: responseData
-              });
-          
-              console.log("RESPONSE BODY:\n", responseBody);
-          
-              var https = require("https");
-              var url = require("url");
-          
-              var parsedUrl = url.parse(event.ResponseURL);
-              var options = {
-                  hostname: parsedUrl.hostname,
-                  port: 443,
-                  path: parsedUrl.path,
-                  method: "PUT",
-                  headers: {
-                      "content-type": "",
-                      "content-length": responseBody.length
-                  }
-              };
-          
-              console.log("SENDING RESPONSE...\n");
-          
-              var request = https.request(options, function(response) {
-                  console.log("STATUS: " + response.statusCode);
-                  console.log("HEADERS: " + JSON.stringify(response.headers));
-                  // Tell AWS Lambda that the function execution is done  
-                  context.done();
-              });
-          
-              request.on("error", function(error) {
-                  console.log("sendResponse Error:" + error);
-                  // Tell AWS Lambda that the function execution is done  
-                  context.done();
-              });
-            
-              // write data to request body
-              request.write(responseBody);
-              request.end();
-          }      
-
-      Handler: "index.handler"
-      Runtime: nodejs6.10
-      Description: "Query the latest ECS AMI for Cloudformation template"
-      Timeout: 300
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Tags:
-        - Key: custom:cloudformation:purpose
-          Value: AMIInfo
 
   ECSTaskInfoFunction:
     Type: AWS::Lambda::Function
@@ -324,7 +190,7 @@ Resources:
       Runtime: python3.6
       Description: "Query the latest ECS Task Definition"
       Timeout: 300
-      Role: !GetAtt LambdaExecutionRole.Arn
+      Role: !GetAtt AMIInfoStack.Outputs.LambdaExecutionRoleArn
       Tags:
         - Key: custom:cloudformation:purpose
           Value: ECSTaskInfo          
@@ -355,13 +221,6 @@ Resources:
        Principal: "sns.amazonaws.com"
        SourceArn: !Ref ASGSNSTopic
 
-  AMIInfo:
-    Type: Custom::AMIInfo
-    Properties:
-      ServiceToken: !GetAtt AMIInfoFunction.Arn
-      Region: !Ref "AWS::Region"
-      # Architecture: HVM64
-      Architecture: ECS
 
 
   ECSTaskInfo:
@@ -381,7 +240,6 @@ Resources:
     Properties: 
       LogGroupName: !Sub /aws/ECS/${AppName}-${AWS::StackName}
       RetentionInDays: 7
-
 
 #######################
 #   KMS
@@ -493,8 +351,6 @@ Resources:
                   Service:
                     - ecs-tasks.amazonaws.com
         Path: /
-        # ManagedPolicyArns:
-        #     - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceRole' 
         Policies:
         - PolicyName: ecs-task-get-parameters
           PolicyDocument:
@@ -537,39 +393,6 @@ Resources:
               - ecs:UpdateService
               Resource: "*"
   
-
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
-      Path: "/"
-      Policies:
-      - PolicyName: root
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:CreateLogGroup
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: arn:aws:logs:*:*:*
-          - Effect: Allow
-            Action:
-            - ec2:DescribeImages
-            Resource: "*"
-          - Effect: Allow
-            Action:
-            - ecs:*
-            Resource: "*"
 
   SNSLambdaExecutionRole:
     # FOR ECS draining
@@ -747,14 +570,12 @@ Resources:
     Properties:
       GroupName: "sg for LoadBalancer"
       GroupDescription: "sg for LoadBalancer"
-      #VpcId: !ImportValue {"Fn::Sub" : "${VpcStackName}-VpcId"}
       VpcId: !Ref Vpc
   SgEC2:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: "sg for ec2"
       GroupDescription: "sg for ec2"
-      #VpcId: !ImportValue {"Fn::Sub" : "${VpcStackName}-VpcId"}
       VpcId: !Ref Vpc
 
   ingress1:
@@ -765,15 +586,6 @@ Resources:
       FromPort: 80
       ToPort: 80
       CidrIp: 0.0.0.0/0
-
-  # ingress2:
-  #   Type: AWS::EC2::SecurityGroupIngress
-  #   Properties:
-  #     GroupId: !Ref SgLB
-  #     IpProtocol: tcp
-  #     FromPort: 22
-  #     ToPort: 22
-  #     CidrIp: 0.0.0.0/0
 
   ingress3:
     Type: AWS::EC2::SecurityGroupIngress
@@ -869,21 +681,20 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref EC2InstanceProfile
-      ImageId: !GetAtt AMIInfo.Id
+      ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
+      # ImageId: !ImportValue !Sub "${AMIStackName}-AMIInfoId"
+      
       InstanceMonitoring: true
       InstanceType:
         !FindInMap
           - InstanceType
           - default
           - web
-      #KernelId: String
       KeyName:
         !If 
           - HasSshKeyName
           - !Ref SshKeyName
           - !Ref AWS::NoValue
-      #PlacementTenancy: String
-      #RamDiskId: String
       SecurityGroups:
         - !Ref SgEC2
       SpotPrice: 
@@ -919,7 +730,8 @@ Resources:
           IamInstanceProfile: 
             Arn: !GetAtt EC2InstanceProfile.Arn
           InstanceType: m3.medium
-          ImageId: !GetAtt AMIInfo.Id
+          # ImageId: !GetAtt AMIInfo.Id
+          ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
           KeyName:
             !If 
               - HasSshKeyName
@@ -953,7 +765,8 @@ Resources:
           IamInstanceProfile: 
             Arn: !GetAtt EC2InstanceProfile.Arn
           InstanceType: m3.medium
-          ImageId: !GetAtt AMIInfo.Id
+          # ImageId: !GetAtt AMIInfo.Id
+          ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
           KeyName:
             !If 
               - HasSshKeyName
@@ -987,7 +800,8 @@ Resources:
           IamInstanceProfile: 
             Arn: !GetAtt EC2InstanceProfile.Arn
           InstanceType: m4.large
-          ImageId: !GetAtt AMIInfo.Id
+          # ImageId: !GetAtt AMIInfo.Id
+          ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
           KeyName:
             !If 
               - HasSshKeyName
@@ -1021,7 +835,8 @@ Resources:
           IamInstanceProfile: 
             Arn: !GetAtt EC2InstanceProfile.Arn
           InstanceType: m4.large
-          ImageId: !GetAtt AMIInfo.Id
+          # ImageId: !GetAtt AMIInfo.Id
+          ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
           KeyName:
             !If 
               - HasSshKeyName
@@ -1055,7 +870,8 @@ Resources:
           IamInstanceProfile: 
             Arn: !GetAtt EC2InstanceProfile.Arn
           InstanceType: c4.large
-          ImageId: !GetAtt AMIInfo.Id
+          # ImageId: !GetAtt AMIInfo.Id
+          ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
           KeyName:
             !If 
               - HasSshKeyName
@@ -1089,7 +905,8 @@ Resources:
           IamInstanceProfile: 
             Arn: !GetAtt EC2InstanceProfile.Arn
           InstanceType: c4.large
-          ImageId: !GetAtt AMIInfo.Id
+          # ImageId: !GetAtt AMIInfo.Id
+          ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
           KeyName:
             !If 
               - HasSshKeyName
@@ -1730,7 +1547,7 @@ Outputs:
 
   ECSTaskDefImageTag:
     Value: !GetAtt ECSTaskInfo.Tag
-    
+
   ECSTaskDefImage:
     Value: !GetAtt ECSTaskInfo.Image
 
