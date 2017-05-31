@@ -161,7 +161,7 @@ Resources:
               image = resp["taskDefinition"]["containerDefinitions"][0]["image"]
               tag = image.split(":")[-1]
               print(image,tag)
-              return resp
+              return (image,tag)
 
           def lambda_handler(event, context):
               print(event)
@@ -179,8 +179,10 @@ Resources:
               respBody["RequestId"] = event["RequestId"]
               respBody["LogicalResourceId"] = event["LogicalResourceId"]
               respBody["Data"] = {"Image": image, "Tag": tag}
-              cfnresp = cfnresponse.send(event, context, cfnresponse.SUCCESS, respBody, "CustomResourcePhysicalID")
+              print(json.dumps(respBody))
+              cfnresp = cfnresponse.send(event, context, cfnresponse.SUCCESS, respBody["Data"], "CustomResourcePhysicalID")
               print(cfnresp)
+              
               # respPut = requests.put(ResponseURL, respBody)
               # print(respPut)
               # print(respPut.content)
