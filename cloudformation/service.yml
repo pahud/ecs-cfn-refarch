@@ -248,7 +248,7 @@ Resources:
       Region: !Ref "AWS::Region"
       Cluster: !Sub "${AWS::StackName}-ecs-cluster"
       TaskDefArn: !Ref ECSCaddyTD
-      ECSServiceName: !GetAtt ECSService.Name
+      ECSServiceName: !Sub "${AWS::StackName}-${AppName}"
 
 
 #######################
@@ -1150,7 +1150,7 @@ Resources:
       Role: !Ref ECSServiceRole
       #TaskDefinition: !Ref ECSWebTD
       TaskDefinition: !Ref ECSCaddyTD
-      # ServiceName: !Sub "${AppName}-${AWS::StackName}"
+      ServiceName: !Sub "${AWS::StackName}-${AppName}"
       PlacementStrategies: 
         - Type: spread
           Field: attribute:ecs.availability-zone
