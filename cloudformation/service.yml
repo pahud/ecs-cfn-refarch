@@ -1553,6 +1553,9 @@ Outputs:
   ECSTaskDefImage:
     Value: !GetAtt ECSTaskInfo.Image
 
+  Tag:
+    Value: !Ref Tag
+
   CanaryTag:
     Value: !Ref CanaryTag
 
