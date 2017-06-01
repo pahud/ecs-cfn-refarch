@@ -247,7 +247,7 @@ Resources:
       ServiceToken: !GetAtt ECSTaskInfoFunction.Arn
       Region: !Ref "AWS::Region"
       Cluster: !Sub "${AWS::StackName}-ecs-cluster"
-      TaskDefArn: !Ref ECSCaddyTD
+      # TaskDefArn: !Ref ECSCaddyTD
       ECSServiceName: !Sub "${AWS::StackName}-${AppName}"
 
 
