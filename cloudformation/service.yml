@@ -154,14 +154,29 @@ Resources:
 
           ecsClient = session.client(service_name='ecs')
 
-          def getImageTag(taskDefArn):
-              resp = ecsClient.describe_task_definition(
+          def getImageTagFromTaskArn(taskDefArn):
+              resp = ecsClient.describe_services(
                   taskDefinition=taskDefArn
               )
               image = resp["taskDefinition"]["containerDefinitions"][0]["image"]
               tag = image.split(":")[-1]
               print(image,tag)
-              return (image,tag)
+              return (image,tag)          
+
+          def getImageTag(serviceName, clusterName):
+              resp = ecsClient.describe_services(
+                  cluster=clusterName,
+                  services=[ serviceName ]
+              )
+              if len(resp["services"])>0:
+                  return getImageTagFromTaskArn(resp["services"][0]["taskDefinition"])
+                  # image = resp["services"][0]["taskDefinition"]
+                  # tag = image.split(":")[-1]
+                  # print(image,tag)
+                  # return (image,tag)
+              else:
+                  print('got no service')
+                  return("","")
 
           def lambda_handler(event, context):
               print(event)
@@ -169,8 +184,9 @@ Resources:
               Properties = event["ResourceProperties"]
               Region = Properties["Region"]
               Cluster = Properties["Cluster"]
+              Service = Properties["ECSServiceName"]
               TaskDefArn = Properties["TaskDefArn"]
-              (image, tag) = getImageTag(TaskDefArn)
+              (image, tag) = getImageTag(Service, Cluster)
               respBody = {}
               respBody["Status"] = "SUCCESS"
               # respBody["Reason"] = "See the details in CloudWatch Log Stream: %s" % context["logStreamName"]
@@ -232,6 +248,7 @@ Resources:
       Region: !Ref "AWS::Region"
       Cluster: !Sub "${AWS::StackName}-ecs-cluster"
       TaskDefArn: !Ref ECSCaddyTD
+      ECSServiceName: !GetAtt ECSService.Name
 
 
 #######################
