@@ -155,7 +155,7 @@ Resources:
           ecsClient = session.client(service_name='ecs')
 
           def getImageTagFromTaskArn(taskDefArn):
-              resp = ecsClient.describe_services(
+              resp = ecsClient.describe_task_definition(
                   taskDefinition=taskDefArn
               )
               image = resp["taskDefinition"]["containerDefinitions"][0]["image"]
