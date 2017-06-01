@@ -185,7 +185,7 @@ Resources:
               Region = Properties["Region"]
               Cluster = Properties["Cluster"]
               Service = Properties["ECSServiceName"]
-              TaskDefArn = Properties["TaskDefArn"]
+              # TaskDefArn = Properties["TaskDefArn"]
               (image, tag) = getImageTag(Service, Cluster)
               respBody = {}
               respBody["Status"] = "SUCCESS"
