@@ -1075,7 +1075,10 @@ Resources:
                 - UseBuiltInTaskDefinitionCond
                 # - "abiosoft/caddy:php"
                 - "pahud/caddy"
-                - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
+                - !If
+                  - EmptyTag
+                  - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${ECSTaskInfo.Tag}
+                  - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
             Cpu: "512"
             PortMappings: 
               - 
@@ -1174,7 +1177,7 @@ Resources:
       Role: !Ref ECSServiceRole
       #TaskDefinition: !Ref ECSWebTD
       TaskDefinition: !Ref ECSCaddyCanaryTD
-      # ServiceName: !Sub "${AppName}-${AWS::StackName}"
+      ServiceName: !Sub "${AWS::StackName}-${AppName}-Canary"
       PlacementStrategies: 
         - Type: spread
           Field: attribute:ecs.availability-zone
