@@ -10,7 +10,8 @@ This is a Amazon EC2 Container Service reference architecture with cloudformatio
 6. ECS Events to CloudWatch Events and eventually go to SNS
 7. Spot Fleet support
 8. ASG scaling in triggering ECS container instance draining([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
-9. **[NEW] credentials management with EC2 Parameter Store**([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
+9. credentials management with EC2 Parameter Store([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
+10. **[new] ECS Service registering both external ALB/TG and internal ALB/TG with ECS Events and Lambda**
 
 
 
@@ -207,3 +208,11 @@ https://github.com/pahud/docker-caddy/blob/master/startup.sh
 ###### Reference
 
 Managing Secrets for Amazon ECS Applications Using Parameter Store and IAM Roles for Tasks | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/
+
+
+
+## Lab10 - ECS Service registering both external ALB/TG and internal ALB/TG with ECS Events and Lambda
+
+If you need to run an ECS Service registering both internet-facing ALB/TG and internal ALB/TG it's not supported yet. But you can have a workaround with ECS Events, CloudWatch Events and Lambda function listening the ECS Task Events and register/deregister the ALB Target Group.
+
+### 
