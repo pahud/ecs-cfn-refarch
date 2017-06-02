@@ -215,4 +215,6 @@ Managing Secrets for Amazon ECS Applications Using Parameter Store and IAM Roles
 
 If you need to run an ECS Service registering both internet-facing ALB/TG and internal ALB/TG it's not supported yet. But you can have a workaround with ECS Events, CloudWatch Events and Lambda function listening the ECS Task Events and register/deregister the ALB Target Group.
 
+###### [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=ecs-refarch&templateURL=https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/lab10-dual-alb.yml)
+
 ### 
