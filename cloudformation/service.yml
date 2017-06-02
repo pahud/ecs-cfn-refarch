@@ -1077,7 +1077,8 @@ Resources:
                 - "pahud/caddy"
                 - !If
                   - EmptyTag
-                  - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${ECSTaskInfo.Tag}
+                  # - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${ECSTaskInfo.Tag}
+                  - !Sub ${ECSTaskInfo.Image}
                   - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
             Cpu: "512"
             PortMappings: 
