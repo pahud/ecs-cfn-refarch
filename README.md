@@ -170,6 +170,8 @@ When cloudformation provisions the ECS cluster with spot fleet, it will launch t
 
 Powering your Amazon ECS Clusters with Spot Fleet | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/powering-your-amazon-ecs-clusters-with-spot-fleet/
 
+Powering your Amazon ECS Cluster with Amazon EC2 Spot Instances | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/powering-your-amazon-ecs-cluster-with-amazon-ec2-spot-instances/
+
 
 
 ## Lab8 - ASG scaling in with ECS container instance draining
