@@ -10,7 +10,7 @@
 </style>
 </head>
 <body>
-<h1>Amazon ECS demo with Caddy web server.</h1>
+<h1>Hooray!!! Amazon ECS demo with Caddy web server.</h1>
 <p>If you see PHP info below, Caddy with PHP container works.</p>
 
 <p>More instructions about this image is <a href="//github.com/abiosoft/caddy-docker/blob/master/README.md" target="_blank">here</a>.<p>
