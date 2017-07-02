@@ -11,7 +11,8 @@ This is a Amazon EC2 Container Service reference architecture with cloudformatio
 7. Spot Fleet support
 8. ASG scaling in triggering ECS container instance draining([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
 9. credentials management with EC2 Parameter Store([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
-10. **[new] ECS Service registering both external ALB/TG and internal ALB/TG with ECS Events and Lambda**
+10. ECS Service registering both external ALB/TG and internal ALB/TG with ECS Events and Lambda
+11. **[new] etcd3 cluster with on ECS cluster(3 nodes)**
 
 
 
@@ -220,3 +221,50 @@ If you need to run an ECS Service registering both internet-facing ALB/TG and in
 ###### [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=lab10-ecs-refarch&templateURL=https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/lab10-dual-alb.yml)
 
 ### 
+
+## Lab11 - etcd3 cluster with Route53 DNS discovery on ECS cluster
+
+Running a fully-managed etcd3 cluster with Route53 DNS discovery with 3 nodes.
+
+[![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=etcd-cluster-ecs&templateURL=https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/lab11-etcd3.yml)
+
+
+
+#### test script
+
+```
+#!/bin/bash
+
+memberList(){
+	docker run -ti quay.io/coreos/etcd:v3.2.1 \
+	/usr/local/bin/etcdctl --discovery-srv etcd.local member list
+}
+
+testSet(){
+	echo "=> testing set foo=bar"
+	docker run -ti quay.io/coreos/etcd:v3.2.1 \
+	/usr/local/bin/etcdctl --discovery-srv etcd.local set foo bar
+}
+testGet(){
+	echo "=> testing get foo"
+	docker run -ti quay.io/coreos/etcd:v3.2.1 \
+	/usr/local/bin/etcdctl --discovery-srv etcd.local get foo
+}
+
+memberList
+testSet
+testGet
+```
+
+#### output
+
+```
+747a7d6b45c893e0: name=etcd-node3 peerURLs=http://etcd-node3.etcd.local:2380 clientURLs=http://etcd-node3.etcd.local:2379 isLeader=false
+7a58bdb114d5c60b: name=etcd-node1 peerURLs=http://etcd-node1.etcd.local:2380 clientURLs=http://etcd-node1.etcd.local:2379 isLeader=false
+b0fb63d26ddbc7b9: name=etcd-node2 peerURLs=http://etcd-node2.etcd.local:2380 clientURLs=http://etcd-node2.etcd.local:2379 isLeader=true
+=> testing set foo=bar
+bar
+=> testing get foo
+bar
+```
+
