@@ -20,8 +20,7 @@ Parameters:
   SshKeyName:
     Type: String
     Description: Optional - Name of an existing EC2 KeyPair to enable SSH access to the ECS instances. Set to 'NoValue' if no SSH key is required.
-    # Default: NoValue
-    Default: aws-pahud
+    Default: NoValue
   SpotPrice:
     Type: Number
     Description: spot price for spot instances
