@@ -224,7 +224,7 @@ If you need to run an ECS Service registering both internet-facing ALB/TG and in
 
 ## Lab11 - etcd3 cluster with Route53 DNS discovery on ECS cluster
 
-Running a fully-managed etcd3 cluster with Route53 DNS discovery with 3 nodes.
+Running a **fully-managed etcd3 cluster** with **Route53 DNS discovery** with 3 nodes. This Lab will generate a 3-node ECS cluster and initialize a 3-node etcd3 cluster running on the ECS cluster. With ECS events,  the Lambda function will manage the Route53 DNS records dynamically with A record of each etcd3 node and **DNS SRV** record set for the cluster as well. Click the **Launch Stack** button below to bring up a new cluster in us-west-2.
 
 [![cloudformation-launch-stack](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/new?stackName=etcd-cluster-ecs&templateURL=https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/lab11-etcd3.yml)
 
