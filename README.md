@@ -1,18 +1,18 @@
 # ecs-cfn-refarch
 
-This is a Amazon EC2 Container Service reference architecture with cloudformation templates that will provision a complete ECS environment with many advanced optional features:
+This is a Amazon EC2 Container Service reference architecture with cloudformation templates that will provision a complete Amazon ECS environment with many advanced optional features:
 
-1. standalone service-only ECS environment (simple provisioning)
-2. ECS Windows Container(simpole provisioning)
-3. ECS CI/CD with Code* and Cloudformation
-4. ECS Service Autoscaling and ECS instances host Autoscaling triggered by Cloudwatch alarms
+1. standalone service-only Amazon ECS environment (simple provisioning)
+2. Amazon ECS Windows Container(simpole provisioning)
+3. Amazon ECS CI/CD with Code* and Cloudformation
+4. Amazon ECS Service Autoscaling and ECS instances host Autoscaling triggered by Cloudwatch alarms
 5. Log Consolidation with awslogs driver
-6. ECS Events to CloudWatch Events and eventually go to SNS
+6. Amazon ECS Events to CloudWatch Events and eventually go to SNS
 7. Spot Fleet support
-8. ASG scaling in triggering ECS container instance draining([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
+8. ASG scaling in triggering Amazon ECS container instance draining([link](https://aws.amazon.com/tw/blogs/compute/how-to-automate-container-instance-draining-in-amazon-ecs/))
 9. credentials management with EC2 Parameter Store([link](https://aws.amazon.com/tw/blogs/compute/managing-secrets-for-amazon-ecs-applications-using-parameter-store-and-iam-roles-for-tasks/))
-10. ECS Service registering both external ALB/TG and internal ALB/TG with ECS Events and Lambda
-11. **[new] etcd3 cluster with on ECS cluster(3 nodes)**
+10. Amazon ECS Service registering both external ALB/TG and internal ALB/TG with Amazon ECS Events and AWS Lambda
+11. **[new] etcd3 cluster running on top of Amazon ECS cluster(3 nodes) and DNS SRV discovery**
 
 
 
