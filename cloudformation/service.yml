@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Description:
-  ECS with ASG and ALB
+  ECS refarch - https://github.com/pahud/ecs-cfn-refarch
 
 Mappings:
   VpcCidrs:
@@ -16,13 +16,12 @@ Mappings:
 
 Parameters:
   SshKeyName:
-    Type: String
-    Description: Optional - Name of an existing EC2 KeyPair to enable SSH access to the ECS instances. Set to 'NoValue' if no SSH key is required.
-    Default: NoValue
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
   SpotPrice:
     Type: Number
     Description: spot price for spot instances
-    Default: 0.1
+    Default: 0.02
   ASGDesiredCapacity:
     Type: Number
     Description: instance count under AutoScalingGroup
@@ -62,7 +61,7 @@ Parameters:
     Default: ""
   MaxPercent:
     Type: Number
-    Default: 200
+    Default: 100
   MinPercent:
     Type: Number
     Default: 50
@@ -103,7 +102,7 @@ Parameters:
 
 
 Conditions:
-  HasSshKeyName: !Not [ !Equals [!Ref SshKeyName, NoValue] ]
+  # HasSshKeyName: !Not [ !Equals [!Ref SshKeyName, NoValue] ]
   SpotOnlyCond: !Not [ !Equals [ !Ref SpotPrice, 0 ] ]
   UseALBCond: !Equals [ !Ref UseALB, "yes" ] 
   UseELBCond: !Equals [ !Ref UseALB, "no" ] 
@@ -259,6 +258,16 @@ Resources:
     Properties: 
       LogGroupName: !Sub /aws/ECS/${AppName}-${AWS::StackName}
       RetentionInDays: 7
+  myAwsLogsLogGroup: 
+    Type: "AWS::Logs::LogGroup"
+    Properties: 
+      LogGroupName: !Sub /aws/ECS/${AppName}-awslogs-${AWS::StackName}
+      RetentionInDays: 7
+  ecsAgentLogGroup: 
+    Type: "AWS::Logs::LogGroup"
+    Properties: 
+      LogGroupName: !Sub /aws/ECS/${AppName}-ecs-agent-${AWS::StackName}
+      RetentionInDays: 7
 
 #######################
 #   KMS
@@ -338,7 +347,16 @@ Resources:
               Action:
               - ec2:CreateTags
               Resource: "*"
-
+        - PolicyName: ecs-instance-awslogs
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "logs:CreateLogGroup"
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "logs:DescribeLogStreams"
+              Resource: "arn:aws:logs:*:*:*"
 
   ECSServiceRole:
     Type: AWS::IAM::Role
@@ -709,11 +727,11 @@ Resources:
           - InstanceType
           - default
           - web
-      KeyName:
-        !If 
-          - HasSshKeyName
-          - !Ref SshKeyName
-          - !Ref AWS::NoValue
+      KeyName: !Ref SshKeyName
+        # !If 
+        #   - HasSshKeyName
+        #   - !Ref SshKeyName
+        #   - !Ref AWS::NoValue
       SecurityGroups:
         - !Ref SgEC2
       SpotPrice: 
@@ -725,11 +743,105 @@ Resources:
         "Fn::Base64": 
           !Sub |
             #!/bin/bash
-            yum update -y
-            yum install -y aws-cfn-bootstrap
+            # yum update -y
+            # yum install -y aws-cfn-bootstrap
+            # echo ECS_CLUSTER=${AWS::StackName}-ecs-cluster >> /etc/ecs/ecs.config
+            # # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
+            # /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ASGDefault --region ${AWS::Region} 
+            Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+            MIME-Version: 1.0
+
+            --==BOUNDARY==
+            Content-Type: text/x-shellscript; charset="us-ascii"
+            #!/bin/bash
             echo ECS_CLUSTER=${AWS::StackName}-ecs-cluster >> /etc/ecs/ecs.config
-            # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
+            yum update -y
+            # Install awslogs and the jq JSON parser
+            yum install -y awslogs jq aws-cfn-bootstrap
+
+            # Inject the CloudWatch Logs configuration file contents
+            cat > /etc/awslogs/awslogs.conf <<- EOF
+            [general]
+            state_file = /var/lib/awslogs/agent-state        
+            
+            [/var/log/dmesg]
+            file = /var/log/dmesg
+            log_group_name = /aws/ECS/var/log/dmesg
+            log_stream_name = {cluster}/{container_instance_id}
+
+            [/var/log/messages]
+            file = /var/log/messages
+            log_group_name = /aws/ECS/var/log/messages
+            log_stream_name = {cluster}/{container_instance_id}
+            datetime_format = %b %d %H:%M:%S
+
+            [/var/log/docker]
+            file = /var/log/docker
+            log_group_name = /aws/ECS/var/log/docker
+            log_stream_name = {cluster}/{container_instance_id}
+            datetime_format = %Y-%m-%dT%H:%M:%S.%f
+
+            [/var/log/ecs/ecs-init.log]
+            file = /var/log/ecs/ecs-init.log.*
+            log_group_name = /aws/ECS/var/log/ecs/ecs-init.log
+            log_stream_name = {cluster}/{container_instance_id}
+            datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+            [/var/log/ecs/ecs-agent.log]
+            file = /var/log/ecs/ecs-agent.log.*
+            log_group_name = /aws/ECS/var/log/ecs/ecs-agent.log
+            log_stream_name = {cluster}/{container_instance_id}
+            datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+            [/var/log/ecs/audit.log]
+            file = /var/log/ecs/audit.log.*
+            log_group_name = /aws/ECS/var/log/ecs/audit.log
+            log_stream_name = {cluster}/{container_instance_id}
+            datetime_format = %Y-%m-%dT%H:%M:%SZ
+
+            EOF
+
+            --==BOUNDARY==
+            Content-Type: text/x-shellscript; charset="us-ascii"
+            #!/bin/bash
+            # Set the region to send CloudWatch Logs data to (the region where the container instance is located)
+            region=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
+            sed -i -e "s/region = us-east-1/region = $region/g" /etc/awslogs/awscli.conf
+
+            start ecs
             /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ASGDefault --region ${AWS::Region} 
+
+            --==BOUNDARY==
+            Content-Type: text/upstart-job; charset="us-ascii"
+
+            #upstart-job
+            description "Configure and start CloudWatch Logs agent on Amazon ECS container instance"
+            author "Amazon Web Services"
+            start on started ecs
+
+            script
+              exec 2>>/var/log/ecs/cloudwatch-logs-start.log
+              set -x
+              
+              until curl -s http://localhost:51678/v1/metadata
+              do
+                sleep 1	
+              done
+
+              # Grab the cluster and container instance ARN from instance metadata
+              cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
+              container_instance_id=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $2}' )
+              
+              # Replace the cluster name and container instance ID placeholders with the actual values
+              sed -i -e "s/{cluster}/$cluster/g" /etc/awslogs/awslogs.conf
+              sed -i -e "s/{container_instance_id}/$container_instance_id/g" /etc/awslogs/awslogs.conf
+              
+              service awslogs start
+              chkconfig awslogs on
+            end script
+            --==BOUNDARY==--
+
+
 
 ###################
 # Spot fleet
@@ -751,11 +863,11 @@ Resources:
           InstanceType: m3.medium
           # ImageId: !GetAtt AMIInfo.Id
           ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName:
-            !If 
-              - HasSshKeyName
-              - !Ref SshKeyName
-              - !Ref AWS::NoValue
+          KeyName: !Ref SshKeyName
+            # !If 
+            #   - HasSshKeyName
+            #   - !Ref SshKeyName
+            #   - !Ref AWS::NoValue
           Monitoring:
             Enabled: 'true'
           NetworkInterfaces:
@@ -786,11 +898,11 @@ Resources:
           InstanceType: m3.medium
           # ImageId: !GetAtt AMIInfo.Id
           ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName:
-            !If 
-              - HasSshKeyName
-              - !Ref SshKeyName
-              - !Ref AWS::NoValue
+          KeyName: !Ref SshKeyName
+            # !If 
+            #   - HasSshKeyName
+            #   - !Ref SshKeyName
+            #   - !Ref AWS::NoValue
           Monitoring:
             Enabled: 'true'
           NetworkInterfaces:
@@ -821,11 +933,11 @@ Resources:
           InstanceType: m4.large
           # ImageId: !GetAtt AMIInfo.Id
           ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName:
-            !If 
-              - HasSshKeyName
-              - !Ref SshKeyName
-              - !Ref AWS::NoValue
+          KeyName: !Ref SshKeyName
+            # !If 
+            #   - HasSshKeyName
+            #   - !Ref SshKeyName
+            #   - !Ref AWS::NoValue
           Monitoring:
             Enabled: 'true'
           NetworkInterfaces:
@@ -856,11 +968,11 @@ Resources:
           InstanceType: m4.large
           # ImageId: !GetAtt AMIInfo.Id
           ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName:
-            !If 
-              - HasSshKeyName
-              - !Ref SshKeyName
-              - !Ref AWS::NoValue
+          KeyName: !Ref SshKeyName
+            # !If 
+            #   - HasSshKeyName
+            #   - !Ref SshKeyName
+            #   - !Ref AWS::NoValue
           Monitoring:
             Enabled: 'true'
           NetworkInterfaces:
@@ -891,11 +1003,11 @@ Resources:
           InstanceType: c4.large
           # ImageId: !GetAtt AMIInfo.Id
           ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName:
-            !If 
-              - HasSshKeyName
-              - !Ref SshKeyName
-              - !Ref AWS::NoValue
+          KeyName: !Ref SshKeyName
+            # !If 
+            #   - HasSshKeyName
+            #   - !Ref SshKeyName
+            #   - !Ref AWS::NoValue
           Monitoring:
             Enabled: 'true'
           NetworkInterfaces:
@@ -926,11 +1038,11 @@ Resources:
           InstanceType: c4.large
           # ImageId: !GetAtt AMIInfo.Id
           ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName:
-            !If 
-              - HasSshKeyName
-              - !Ref SshKeyName
-              - !Ref AWS::NoValue
+          KeyName: !Ref SshKeyName
+            # !If 
+            #   - HasSshKeyName
+            #   - !Ref SshKeyName
+            #   - !Ref AWS::NoValue
           Monitoring:
             Enabled: 'true'
           NetworkInterfaces:
@@ -1063,6 +1175,9 @@ Resources:
   ECSCaddyTD:
       Type: AWS::ECS::TaskDefinition
       Properties: 
+        Volumes:
+          -
+            Name: empty
         TaskRoleArn: !GetAtt ECSTaskRole.Arn
         Family: !Sub ${AppName}-${ECSDefaultCluster}
         ContainerDefinitions: 
@@ -1086,11 +1201,6 @@ Resources:
                 ContainerPort: 2015
                 HostPort: 0
             Memory: "1024"
-            Ulimits:
-              - Name: nofile
-                HardLimit: "10240"
-                SoftLimit: "10240"
-              
             Essential: "true"
             LogConfiguration:
               LogDriver: "awslogs"
@@ -1098,7 +1208,18 @@ Resources:
                 awslogs-region: !Ref AWS::Region
                 awslogs-group: !Sub /aws/ECS/${AppName}-${AWS::StackName}
                 awslogs-stream-prefix: !Ref AppName
-
+          - 
+            Name: awslogs
+            Image: "pahud/awslogs"
+            Cpu: "128"
+            Memory: "128"
+            Essential: "true"
+            LogConfiguration:
+              LogDriver: "awslogs"
+              Options:
+                awslogs-region: !Ref AWS::Region
+                awslogs-group: !Sub /aws/ECS/${AppName}-awslogs-${AWS::StackName}
+                awslogs-stream-prefix: !Ref AppName
 
   ECSCaddyCanaryTD:
       Type: AWS::ECS::TaskDefinition
@@ -1137,6 +1258,40 @@ Resources:
                 awslogs-region: !Ref AWS::Region
                 awslogs-group: !Sub /aws/ECS/${AppName}-${AWS::StackName}
                 awslogs-stream-prefix: !Ref AppName
+
+  # ECSAgentLoggerTD:
+  #     Type: AWS::ECS::TaskDefinition
+  #     Properties: 
+  #       Volumes:
+  #         -
+  #           Name: var-log-ecs
+  #           Host:
+  #             SourcePath: /var/log/ecs
+  #       TaskRoleArn: !GetAtt ECSTaskRole.Arn
+  #       Family: !Sub ${AppName}-${ECSDefaultCluster}-ecsAgent-log
+  #       ContainerDefinitions: 
+  #         - 
+  #           Name: ecs-agent-logger-per-host
+  #           Image: pahud/caddy
+  #           Command: 
+  #             - "tail"
+  #             - "-F"
+  #             - "/var/log/ecs/*"
+  #           Cpu: "1"
+  #           Memory: "128"
+  #           MountPoints:
+  #             -
+  #               ContainerPath: /var/log/ecs
+  #               SourceVolume: var-log-ecs
+  #               ReadOnly: false
+  #           Essential: "true"
+  #           LogConfiguration:
+  #             LogDriver: "awslogs"
+  #             Options:
+  #               awslogs-region: !Ref AWS::Region
+  #               awslogs-group: !Sub /aws/ECS/${AppName}-ecs-agent-${AWS::StackName}
+  #               awslogs-stream-prefix: ecs-agent
+
 
   ECSService:
     DependsOn: [publicALB, publicALBTargetGroup, ALBListener]
@@ -1184,6 +1339,21 @@ Resources:
           Field: attribute:ecs.availability-zone
         - Type: spread
           Field: host
+
+  # ECSAgentLogger:
+  #   # DependsOn: [publicALB, publicALBTargetGroup, ALBListener]
+  #   Type: "AWS::ECS::Service"
+  #   Properties: 
+  #     Cluster: !Ref ECSDefaultCluster
+  #     DeploymentConfiguration:
+  #       MaximumPercent: !Ref MaxPercent
+  #       MinimumHealthyPercent: !Ref MinPercent
+  #     DesiredCount: !Ref ASGDesiredCapacity
+  #     # Role: !Ref ECSServiceRole
+  #     TaskDefinition: !Ref ECSAgentLoggerTD
+  #     ServiceName: !Sub "${AWS::StackName}-ecs-agent-logger-per-host"
+  #     PlacementConstraints: 
+  #       - Type: distinctInstance
 
 
   ECSscalableTarget:
@@ -1464,7 +1634,7 @@ Resources:
   ServiceCPUUtilAlarmScaleIn:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      EvaluationPeriods: '1'
+      EvaluationPeriods: '120'
       Statistic: Average
       Threshold: '20'
       AlarmDescription: Alarm if our ECS Service CPU Utilization is too low
