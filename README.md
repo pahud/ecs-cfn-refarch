@@ -36,7 +36,7 @@ click the button to launch the demo stack in *us-west-2*
 
 check the cloudformation output and click the ***LoadBalancerURL*** link to see the result.
 
-
+![Lab1-launch-stack](https://d2hcg9pbhpot8s.cloudfront.net/ecs-cfn-refarch/lab1-launch-cfn-stack.gif)
 
 ## Lab2 - Windows Container
 
