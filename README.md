@@ -173,6 +173,8 @@ Powering your Amazon ECS Clusters with Spot Fleet | AWS Compute Blog - https://a
 
 Powering your Amazon ECS Cluster with Amazon EC2 Spot Instances | AWS Compute Blog - https://aws.amazon.com/tw/blogs/compute/powering-your-amazon-ecs-cluster-with-amazon-ec2-spot-instances/
 
+Save 90% on Your Containerized Workloads - 2017 AWS Online Tech Talks - YouTube - https://www.youtube.com/watch?v=yLpDczIRJSQ
+
 
 
 ## Lab8 - ASG scaling in with ECS container instance draining
