@@ -1,32 +1,130 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Description:
-  ECS refarch Lab1 - https://github.com/pahud/ecs-cfn-refarch
+  ECS refarch - https://github.com/pahud/ecs-cfn-refarch
 
 Mappings:
-  VpcCidrs:
-      default:
-        vpc: 10.0.0.0/16
-        pubzonea: 10.0.1.0/24
-        pubzoneb: 10.0.2.0/24
-
   InstanceType:
     default:
-      web: m3.medium
+      web: m4.large
 
 Parameters:
   SshKeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
-  InstancePurchaseOption: 
+    
+  VpcId:
+    Description: The VPC of the worker instances
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIds:
+    Description: Select 3 subnets where workers can be created.
+    Type: List<AWS::EC2::Subnet::Id>
+
+  NodeInstanceType:
+    Description: Default EC2 instance type for the node instances.
     Type: String
-    AllowedValues: ["spot", "on-demand"]
-    Default: spot
-    Description: spot or on-demand EC2 instance(s)
-  SpotPrice:
-    Type: Number
-    Description: spot price for spot instances
-    Default: 0.02
+    Default: t3.large
+    AllowedValues:
+    - t2.small
+    - t2.medium
+    - t2.large
+    - t2.xlarge
+    - t2.2xlarge
+    - t3.nano
+    - t3.micro
+    - t3.small
+    - t3.medium
+    - t3.large
+    - t3.xlarge
+    - t3.2xlarge
+    - m3.medium
+    - m3.large
+    - m3.xlarge
+    - m3.2xlarge
+    - m4.large
+    - m4.xlarge
+    - m4.2xlarge
+    - m4.4xlarge
+    - m4.10xlarge
+    - m5.large
+    - m5.xlarge
+    - m5.2xlarge
+    - m5.4xlarge
+    - m5.12xlarge
+    - m5.24xlarge
+    - c4.large
+    - c4.xlarge
+    - c4.2xlarge
+    - c4.4xlarge
+    - c4.8xlarge
+    - c5.large
+    - c5.xlarge
+    - c5.2xlarge
+    - c5.4xlarge
+    - c5.9xlarge
+    - c5.18xlarge
+    - i3.large
+    - i3.xlarge
+    - i3.2xlarge
+    - i3.4xlarge
+    - i3.8xlarge
+    - i3.16xlarge
+    - r3.xlarge
+    - r3.2xlarge
+    - r3.4xlarge
+    - r3.8xlarge
+    - r4.large
+    - r4.xlarge
+    - r4.2xlarge
+    - r4.4xlarge
+    - r4.8xlarge
+    - r4.16xlarge
+    - x1.16xlarge
+    - x1.32xlarge
+    - p2.xlarge
+    - p2.8xlarge
+    - p2.16xlarge
+    - p3.2xlarge
+    - p3.8xlarge
+    - p3.16xlarge
+    - p3dn.24xlarge
+    - r5.large
+    - r5.xlarge
+    - r5.2xlarge
+    - r5.4xlarge
+    - r5.12xlarge
+    - r5.24xlarge
+    - r5d.large
+    - r5d.xlarge
+    - r5d.2xlarge
+    - r5d.4xlarge
+    - r5d.12xlarge
+    - r5d.24xlarge
+    - z1d.large
+    - z1d.xlarge
+    - z1d.2xlarge
+    - z1d.3xlarge
+    - z1d.6xlarge
+    - z1d.12xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+    
+  # InstancePurchaseOption: 
+  #   Type: String
+  #   AllowedValues: ["spot", "on-demand"]
+  #   Default: spot
+  #   Description: spot or on-demand EC2 instance(s)
+  # SpotPrice:
+  #   Type: Number
+  #   Description: spot price for spot instances
+  #   Default: 0.02
+  CaddyImage:
+    Description: Caddy docker image URI
+    Type: String
+    Default: pahud/caddy:ecs-cfn-refarch
+  #
+  # For the 1st ASG
+  #
   ASGDesiredCapacity:
     Type: Number
     Description: instance count under AutoScalingGroup
@@ -39,6 +137,68 @@ Parameters:
     Type: Number
     Description: min instance count under AutoScalingGroup
     Default: 0
+  OnDemandBaseCapacity:
+    Type: Number
+    Description: On-Demand Base Capacity
+    Default: 0
+  OnDemandPercentageAboveBaseCapacity:
+    Type: Number
+    Description: "on-demand percentage above base capacity(0-100)"
+    Default: 0
+  SpotInstancePools:
+    Type: Number
+    Description: "spot instance pools(1-20)"
+    Default: 9
+  InstanceTypesOverride:
+    Type: String
+    Description: "multiple instance types to override(seperated by comma)"
+    Default: "t3.small,t3.medium,t3.large"    
+  ASGAutoAssignPublicIp:
+    Type: String
+    Description: "auto assign public IP address for ASG instances"
+    AllowedValues:
+      - "yes"
+      - "no"
+    Default: "yes"
+  #
+  # For the 2nd ASG
+  #
+  ASGDesiredCapacity2:
+    Type: Number
+    Description: instance count under AutoScalingGroup
+    Default: 2
+  ASGMaxSize2:
+    Type: Number
+    Description: max instance count under AutoScalingGroup
+    Default: 2
+  ASGMinSize2:
+    Type: Number
+    Description: min instance count under AutoScalingGroup
+    Default: 0
+  OnDemandBaseCapacity2:
+    Type: Number
+    Description: On-Demand Base Capacity
+    Default: 2
+  OnDemandPercentageAboveBaseCapacity2:
+    Type: Number
+    Description: "on-demand percentage above base capacity(0-100)"
+    Default: 100
+  SpotInstancePools2:
+    Type: Number
+    Description: "spot instance pools(1-20)"
+    Default: 9    
+  InstanceTypesOverride2:
+    Type: String
+    Description: "multiple instance types to override for 2nd ASG(seperated by comma)"
+    Default: "m4.large,m5.large,c5.large" 
+  ASGAutoAssignPublicIp2:
+    Type: String
+    Description: "auto assign public IP address for ASG instances"
+    AllowedValues:
+      - "yes"
+      - "no"
+    Default: "yes"
+    
   UseALB:
     Type: String
     AllowedValues: ["yes", "no"]
@@ -56,14 +216,6 @@ Parameters:
     Type: String
     Description: placeholder for Docker image tag generated by CodeBuild
     Default: ""
-  CanaryTag:
-    Type: String
-    Description: placeholder for Docker image tag generated by CodeBuild for canary deployment
-    Default: ""
-  # Cluster:
-  #   Type: String
-  #   Description: ECS Cluster
-  #   Default: default
   Repository:
     Type: String
     Description: placeholder for ECR repository
@@ -77,13 +229,6 @@ Parameters:
   ServiceDesiredCount:
     Type: Number
     Default: 2
-  IsWithCanary:
-    Type: Number
-    Default: 0
-  CanaryDesiredCount:
-    Type: Number
-    Default: 0
-    Description: desired count of ecs task for canary deployment  
   UseBuiltInTaskDefinition:
     Type: String
     Default: "yes"
@@ -91,13 +236,6 @@ Parameters:
     AllowedValues:
       - "yes"
       - "no"
-  AutoscalingGroupOrSpotFleet:
-    Type: String
-    Default: "AutoscalingGroup"
-    Description: "provision the ECS cluster with AutoscalingGroup or SpotFleet"
-    AllowedValues:
-      - "AutoscalingGroup"
-      - "SpotFleet"
   S3BucketName:
     Type: String
     Description: >
@@ -105,36 +243,32 @@ Parameters:
     Default: ""
   ParameterStoreYourName:
     Type: String
-    Default: "EmptyName"
+    Default: "DefaultName"
+    Description: >
+      OPTIONAL - parameter string stored in EC2 Parameter Store
+  ParameterStoreYourPassword:
+    Type: String
+    Default: "DefaultPassword"
     Description: >
       OPTIONAL - parameter string stored in EC2 Parameter Store
   ECSAMI:
     Description: AMI ID
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/ecs/optimized-ami/amazon-linux/recommended/image_id
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
 
 
 Conditions:
-  # HasSshKeyName: !Not [ !Equals [!Ref SshKeyName, NoValue] ]
-  #SpotOnlyCond: !Not [ !Equals [ !Ref SpotPrice, 0 ] ]
-  SpotOnlyCond: !Equals [!Ref InstancePurchaseOption, "spot"]
+  IsASGAutoAssignPublicIp: !Equals [ !Ref ASGAutoAssignPublicIp , "yes" ]
   HasSMSCond: !Not [ !Equals [ !Ref SNSMobileNumber, ""]]
   UseALBCond: !Equals [ !Ref UseALB, "yes" ] 
   UseELBCond: !Equals [ !Ref UseALB, "no" ] 
   UseBuiltInTaskDefinitionCond: !Equals [ !Ref UseBuiltInTaskDefinition, "yes" ]
-  EnableASGCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "AutoscalingGroup" ]
-  DisableASGCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "SpotFleet" ]
-  SpotFleetCond: !Equals [ !Ref AutoscalingGroupOrSpotFleet, "SpotFleet" ]
   ECSLambdaDrainCond: !Not [ !Equals [ !Ref S3BucketName, "" ] ]
-  EmptyCanaryTag: !Equals [ !Ref CanaryTag, "" ]
-  EmptyTag: !Equals [ !Ref Tag, "" ]
-  NotEmptyTag: !Not [ !Equals [ !Ref Tag, "" ] ]
+  # EmptyTag: !Equals [ !Ref Tag, "" ]
+  # NotEmptyTag: !Not [ !Equals [ !Ref Tag, "" ] ]
 
 
 Resources:
-###################
-# EC2 Parameter Store
-###################
   ParameterYourName:
     Type: "AWS::SSM::Parameter"
     Properties: 
@@ -143,13 +277,13 @@ Resources:
       Type: String
       Value: !Ref ParameterStoreYourName
 
-
-  # AMIInfoStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/AMIInfo.yml
-  #     TimeoutInMinutes: 5
-
+  ParameterYourPassword:
+    Type: "AWS::SSM::Parameter"
+    Properties: 
+      Name: !Sub "ECSYourPassword-${AWS::StackName}"
+      Description: "Your Password saved in EC2 Parameter Store"
+      Type: String
+      Value: !Ref ParameterStoreYourPassword
 
   LambdaExecutionRole:
     Type: AWS::IAM::Role
@@ -180,82 +314,80 @@ Resources:
             - ecs:*
             Resource: "*"  
 
+  # ECSTaskInfoFunction:
+  #   Type: AWS::Lambda::Function
+  #   Properties:
+  #     Code:
+  #       ZipFile: >-
 
+  #         import json, boto3
 
-  ECSTaskInfoFunction:
-    Type: AWS::Lambda::Function
-    Properties:
-      Code:
-        ZipFile: >-
+  #         import cfnresponse
 
-          import json, boto3
+  #         from botocore.vendored import requests
 
-          import cfnresponse
+  #         session = boto3.session.Session()
 
-          from botocore.vendored import requests
+  #         ecsClient = session.client(service_name='ecs')
 
-          session = boto3.session.Session()
+  #         def getImageTagFromTaskArn(taskDefArn):
+  #             resp = ecsClient.describe_task_definition(
+  #                 taskDefinition=taskDefArn
+  #             )
+  #             image = resp["taskDefinition"]["containerDefinitions"][0]["image"]
+  #             tag = image.split(":")[-1]
+  #             print(image,tag)
+  #             return (image,tag)          
 
-          ecsClient = session.client(service_name='ecs')
+  #         def getImageTag(serviceName, clusterName):
+  #             resp = ecsClient.describe_services(
+  #                 cluster=clusterName,
+  #                 services=[ serviceName ]
+  #             )
+  #             if len(resp["services"])>0:
+  #                 return getImageTagFromTaskArn(resp["services"][0]["taskDefinition"])
+  #                 # image = resp["services"][0]["taskDefinition"]
+  #                 # tag = image.split(":")[-1]
+  #                 # print(image,tag)
+  #                 # return (image,tag)
+  #             else:
+  #                 print('got no service')
+  #                 return("","")
 
-          def getImageTagFromTaskArn(taskDefArn):
-              resp = ecsClient.describe_task_definition(
-                  taskDefinition=taskDefArn
-              )
-              image = resp["taskDefinition"]["containerDefinitions"][0]["image"]
-              tag = image.split(":")[-1]
-              print(image,tag)
-              return (image,tag)          
-
-          def getImageTag(serviceName, clusterName):
-              resp = ecsClient.describe_services(
-                  cluster=clusterName,
-                  services=[ serviceName ]
-              )
-              if len(resp["services"])>0:
-                  return getImageTagFromTaskArn(resp["services"][0]["taskDefinition"])
-                  # image = resp["services"][0]["taskDefinition"]
-                  # tag = image.split(":")[-1]
-                  # print(image,tag)
-                  # return (image,tag)
-              else:
-                  print('got no service')
-                  return("","")
-
-          def lambda_handler(event, context):
-              print(event)
-              ResponseURL = event["ResponseURL"]
-              Properties = event["ResourceProperties"]
-              Region = Properties["Region"]
-              Cluster = Properties["Cluster"]
-              Service = Properties["ECSServiceName"]
-              # TaskDefArn = Properties["TaskDefArn"]
-              (image, tag) = getImageTag(Service, Cluster)
-              respBody = {}
-              respBody["Status"] = "SUCCESS"
-              # respBody["Reason"] = "See the details in CloudWatch Log Stream: %s" % context["logStreamName"]
-              # respBody["PhysicalResourceId"] = context["logStreamName"]
-              respBody["StackId"] = event["StackId"]
-              respBody["RequestId"] = event["RequestId"]
-              respBody["LogicalResourceId"] = event["LogicalResourceId"]
-              respBody["Data"] = {"Image": image, "Tag": tag}
-              print(json.dumps(respBody))
-              cfnresp = cfnresponse.send(event, context, cfnresponse.SUCCESS, respBody["Data"], "CustomResourcePhysicalID")
-              print(cfnresp)
+  #         def lambda_handler(event, context):
+  #             print(event)
+  #             ResponseURL = event["ResponseURL"]
+  #             Properties = event["ResourceProperties"]
+  #             Region = Properties["Region"]
+  #             Cluster = Properties["Cluster"]
+  #             Service = Properties["ECSServiceName"]
+  #             # TaskDefArn = Properties["TaskDefArn"]
+  #             (image, tag) = getImageTag(Service, Cluster)
+  #             respBody = {}
+  #             respBody["Status"] = "SUCCESS"
+  #             # respBody["Reason"] = "See the details in CloudWatch Log Stream: %s" % context["logStreamName"]
+  #             # respBody["PhysicalResourceId"] = context["logStreamName"]
+  #             respBody["StackId"] = event["StackId"]
+  #             respBody["RequestId"] = event["RequestId"]
+  #             respBody["LogicalResourceId"] = event["LogicalResourceId"]
+  #             respBody["Data"] = {"Image": image, "Tag": tag}
+  #             print(json.dumps(respBody))
+  #             cfnresp = cfnresponse.send(event, context, cfnresponse.SUCCESS, respBody["Data"], "CustomResourcePhysicalID")
+  #             print(cfnresp)
               
-              # respPut = requests.put(ResponseURL, respBody)
-              # print(respPut)
-              # print(respPut.content)
-              return "OK"
+  #             # respPut = requests.put(ResponseURL, respBody)
+  #             # print(respPut)
+  #             # print(respPut.content)
+  #             return "OK"
 
-      Handler: "index.lambda_handler"
-      Runtime: python3.6
-      Description: "Query the latest ECS Task Definition"
-      Timeout: 300
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Tags:
-        - Key: custom:cloudformation:purpose
-          Value: ECSTaskInfo          
+  #     Handler: "index.lambda_handler"
+  #     Runtime: python3.6
+  #     Description: "Query the latest ECS Task Definition"
+  #     Timeout: 300
+  #     Role: !GetAtt LambdaExecutionRole.Arn
+  #     Tags:
+  #       - Key: custom:cloudformation:purpose
+  #         Value: ECSTaskInfo          
 
 
   LambdaAsgECSDraining:
@@ -285,14 +417,14 @@ Resources:
 
 
 
-  ECSTaskInfo:
-    Type: Custom::ECSTaskInfo
-    Properties:
-      ServiceToken: !GetAtt ECSTaskInfoFunction.Arn
-      Region: !Ref "AWS::Region"
-      Cluster: !Sub "${AWS::StackName}-ecs-cluster"
-      # TaskDefArn: !Ref ECSCaddyTD
-      ECSServiceName: !Sub "${AWS::StackName}-${AppName}"
+  # ECSTaskInfo:
+  #   Type: Custom::ECSTaskInfo
+  #   Properties:
+  #     ServiceToken: !GetAtt ECSTaskInfoFunction.Arn
+  #     Region: !Ref "AWS::Region"
+  #     Cluster: !Sub "${AWS::StackName}-ecs-cluster"
+  #     # TaskDefArn: !Ref ECSCaddyTD
+  #     ECSServiceName: !Sub "${AWS::StackName}-${AppName}"
 
 
 #######################
@@ -504,6 +636,46 @@ Resources:
                 - logs:PutLogEvents
               Resource: "arn:aws:logs:*:*:*"
 
+
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+        AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Action: 
+                  - 'sts:AssumeRole'
+                Effect: Allow
+                Principal:
+                  Service:
+                    - ecs-tasks.amazonaws.com
+        Path: /
+        Policies:
+        - PolicyName: ecs-task-get-parameters
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - ssm:GetParameters
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECS*"
+        - PolicyName: ecs-task-decrypt-kms
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+              - kms:Decrypt
+              Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/${myKey}"
+        - PolicyName: ecs-task-put-cwl
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: "arn:aws:logs:*:*:*"
+
+
   ECSAutoScalingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -578,23 +750,6 @@ Resources:
       - arn:aws:iam::aws:policy/service-role/AutoScalingNotificationAccessRole
       Path: "/"
 
-
-  IAMFleetRole:
-    Type: AWS::IAM::Role
-    Properties:
-        AssumeRolePolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Action: 
-                  - 'sts:AssumeRole'
-                Effect: Allow
-                Principal:
-                  Service:
-                    - spotfleet.amazonaws.com
-        Path: /
-        ManagedPolicyArns:
-            - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole   
-
   SNSLambdaRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -616,84 +771,84 @@ Resources:
 #######################
 #   VPC / infra
 #######################
-  Vpc:
-    Type: AWS::EC2::VPC
-    Properties:
-      Tags: 
-        -
-          Key: Name
-          Value: cfn-vpc
-      CidrBlock: !FindInMap [ VpcCidrs, default, vpc ]
-      EnableDnsSupport: true
-      EnableDnsHostnames: true
+  # Vpc:
+  #   Type: AWS::EC2::VPC
+  #   Properties:
+  #     Tags: 
+  #       -
+  #         Key: Name
+  #         Value: cfn-vpc
+  #     CidrBlock: !FindInMap [ VpcCidrs, default, vpc ]
+  #     EnableDnsSupport: true
+  #     EnableDnsHostnames: true
 
-  VPCGWAttach:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      InternetGatewayId: !Ref InternetGateway
-      VpcId: !Ref Vpc
+  # VPCGWAttach:
+  #   Type: AWS::EC2::VPCGatewayAttachment
+  #   Properties:
+  #     InternetGatewayId: !Ref InternetGateway
+  #     VpcId: !Ref Vpc
 
-  InternetGateway:
-    Type: AWS::EC2::InternetGateway
-    #Properties:
+  # InternetGateway:
+  #   Type: AWS::EC2::InternetGateway
+  #   #Properties:
 
-  PublicRT:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      Tags:
-        -
-          Key: Name
-          Value: public-rt
-      VpcId: !Ref Vpc
+  # PublicRT:
+  #   Type: AWS::EC2::RouteTable
+  #   Properties:
+  #     Tags:
+  #       -
+  #         Key: Name
+  #         Value: public-rt
+  #     VpcId: !Ref Vpc
 
-  PublicRouteViaIgw:
-    Type: AWS::EC2::Route
-    Properties: 
-      RouteTableId: !Ref PublicRT
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
-
-
-  PublicZoneA:
-    Type: AWS::EC2::Subnet
-    Properties:
-      Tags:
-        -
-          Key: Name
-          Value: pub-zone-a
-      VpcId: !Ref Vpc
-      CidrBlock: !FindInMap [ VpcCidrs, default, pubzonea ]
-      AvailabilityZone: 
-        Fn::Select:
-          - 0 
-          - Fn::GetAZs: ""
-
-  PublicZoneB:
-    Type: AWS::EC2::Subnet
-    Properties:
-      Tags:
-        -
-          Key: Name
-          Value: pub-zone-b
-      VpcId: !Ref Vpc
-      CidrBlock: !FindInMap [ VpcCidrs, default, pubzoneb ]
-      AvailabilityZone: 
-        Fn::Select:
-          - 1 
-          - Fn::GetAZs: ""
+  # PublicRouteViaIgw:
+  #   Type: AWS::EC2::Route
+  #   Properties: 
+  #     RouteTableId: !Ref PublicRT
+  #     DestinationCidrBlock: 0.0.0.0/0
+  #     GatewayId: !Ref InternetGateway
 
 
-  PublicZoneARouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRT
-      SubnetId: !Ref PublicZoneA
+  # PublicZoneA:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     Tags:
+  #       -
+  #         Key: Name
+  #         Value: pub-zone-a
+  #     VpcId: !Ref Vpc
+  #     CidrBlock: !FindInMap [ VpcCidrs, default, pubzonea ]
+  #     AvailabilityZone: 
+  #       Fn::Select:
+  #         - 0 
+  #         - Fn::GetAZs: ""
 
-  PublicZoneBRouteTableAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      RouteTableId: !Ref PublicRT
-      SubnetId: !Ref PublicZoneB
+  # PublicZoneB:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     Tags:
+  #       -
+  #         Key: Name
+  #         Value: pub-zone-b
+  #     VpcId: !Ref Vpc
+  #     CidrBlock: !FindInMap [ VpcCidrs, default, pubzoneb ]
+  #     AvailabilityZone: 
+  #       Fn::Select:
+  #         - 1 
+  #         - Fn::GetAZs: ""
+
+
+  # PublicZoneARouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref PublicRT
+  #     SubnetId: !Ref PublicZoneA
+
+  # PublicZoneBRouteTableAssociation:
+  #   Type: AWS::EC2::SubnetRouteTableAssociation
+  #   Properties:
+  #     RouteTableId: !Ref PublicRT
+  #     SubnetId: !Ref PublicZoneB
 
 
 
@@ -705,15 +860,16 @@ Resources:
   SgLB:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: "sg for LoadBalancer"
+      GroupName: !Sub "${AWS::StackName}-sglb"
       GroupDescription: "sg for LoadBalancer"
-      VpcId: !Ref Vpc
-  SgEC2:
+      VpcId: !Ref VpcId
+      
+  NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: "sg for ec2"
       GroupDescription: "sg for ec2"
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
 
   ingressSgLB1:
     Type: AWS::EC2::SecurityGroupIngress
@@ -745,7 +901,7 @@ Resources:
   ingress3:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Ref SgEC2
+      GroupId: !Ref NodeSecurityGroup
       SourceSecurityGroupId: !Ref SgLB
       IpProtocol: tcp
       FromPort: 0
@@ -761,7 +917,6 @@ Resources:
     Condition: UseALBCond
     Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
     Properties:
-
       Name: !Sub
         - ${StackName}-alb
         -
@@ -770,8 +925,8 @@ Resources:
       SecurityGroups:
         - !Ref SgLB
       Subnets:
-        - !Ref PublicZoneA
-        - !Ref PublicZoneB
+        - !Select [0, !Ref SubnetIds]
+        - !Select [1, !Ref SubnetIds]
       Tags:
         -
           Key: Name
@@ -802,9 +957,7 @@ Resources:
       HealthyThresholdCount: 2
       Matcher:
         HttpCode: 200-299
-      Name: !Sub
-        - ${StackName}-http-tg
-        - StackName: !Ref AWS::StackName
+      Name: !Sub "${AWS::StackName}"
       Port: 80
       Protocol: HTTP
       Tags:
@@ -812,7 +965,11 @@ Resources:
           Key: Name
           Value: alb-tg        
       UnhealthyThresholdCount: 3
-      VpcId: !Ref Vpc
+      VpcId: !Ref VpcId
+      TargetGroupAttributes: 
+        - 
+          Key: deregistration_delay.timeout_seconds
+          Value: 15
 
  
   EC2InstanceProfile:
@@ -822,459 +979,275 @@ Resources:
       Roles:
         - !Ref ECSServiceRoleForEC2
 
-  SpotFleetInstanceProfile:
-    Condition: SpotFleetCond
-    Type: "AWS::IAM::InstanceProfile"
-    Properties: 
-      Path: /
-      Roles:
-        - !Ref IAMFleetRole
 
-  ASGLC:
-    Condition: EnableASGCond
-    Type: "AWS::AutoScaling::LaunchConfiguration"
-    Properties:
-      AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref EC2InstanceProfile
-      ImageId: !Ref ECSAMI
-      # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-      # ImageId: !ImportValue !Sub "${AMIStackName}-AMIInfoId"
-      
-      InstanceMonitoring: true
-      InstanceType:
-        !FindInMap
-          - InstanceType
-          - default
-          - web
-      KeyName: !Ref SshKeyName
-        # !If 
-        #   - HasSshKeyName
-        #   - !Ref SshKeyName
-        #   - !Ref AWS::NoValue
-      SecurityGroups:
-        - !Ref SgEC2
-      SpotPrice: 
-        !If 
-          - SpotOnlyCond
-          - !Ref SpotPrice
-          - !Ref AWS::NoValue
-      UserData: 
-        "Fn::Base64": 
-          !Sub |
-            Content-Type: multipart/mixed; boundary="==BOUNDARY=="
-            MIME-Version: 1.0
-
-            --==BOUNDARY==
-            Content-Type: text/x-shellscript; charset="us-ascii"
-            #!/bin/bash
-            echo ECS_CLUSTER=${AWS::StackName}-ecs-cluster >> /etc/ecs/ecs.config
-            echo ECS_DISABLE_IMAGE_CLEANUP=false >> /etc/ecs/ecs.config
-            echo ECS_INSTANCE_ATTRIBUTES='{"instance-purchase-option":"${InstancePurchaseOption}"}' >> /etc/ecs/ecs.config
-            yum update -y
-            # Install awslogs and the jq JSON parser
-            yum install -y awslogs jq aws-cfn-bootstrap
-
-            # Inject the CloudWatch Logs configuration file contents
-            cat > /etc/awslogs/awslogs.conf <<- EOF
-            [general]
-            state_file = /var/lib/awslogs/agent-state        
-            
-            [/var/log/dmesg]
-            file = /var/log/dmesg
-            log_group_name = /aws/ECS/var/log/dmesg
-            log_stream_name = {cluster}/{container_instance_id}
-
-            [/var/log/messages]
-            file = /var/log/messages
-            log_group_name = /aws/ECS/var/log/messages
-            log_stream_name = {cluster}/{container_instance_id}
-            datetime_format = %b %d %H:%M:%S
-
-            [/var/log/docker]
-            file = /var/log/docker
-            log_group_name = /aws/ECS/var/log/docker
-            log_stream_name = {cluster}/{container_instance_id}
-            datetime_format = %Y-%m-%dT%H:%M:%S.%f
-
-            [/var/log/ecs/ecs-init.log]
-            file = /var/log/ecs/ecs-init.log.*
-            log_group_name = /aws/ECS/var/log/ecs/ecs-init.log
-            log_stream_name = {cluster}/{container_instance_id}
-            datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-            [/var/log/ecs/ecs-agent.log]
-            file = /var/log/ecs/ecs-agent.log.*
-            log_group_name = /aws/ECS/var/log/ecs/ecs-agent.log
-            log_stream_name = {cluster}/{container_instance_id}
-            datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-            [/var/log/ecs/audit.log]
-            file = /var/log/ecs/audit.log.*
-            log_group_name = /aws/ECS/var/log/ecs/audit.log
-            log_stream_name = {cluster}/{container_instance_id}
-            datetime_format = %Y-%m-%dT%H:%M:%SZ
-
-            EOF
-
-            --==BOUNDARY==
-            Content-Type: text/x-shellscript; charset="us-ascii"
-            #!/bin/bash
-            # Set the region to send CloudWatch Logs data to (the region where the container instance is located)
-            region=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
-            sed -i -e "s/region = us-east-1/region = $region/g" /etc/awslogs/awscli.conf
-
-            start ecs
-            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ASGDefault --region ${AWS::Region} 
-
-            --==BOUNDARY==
-            Content-Type: text/upstart-job; charset="us-ascii"
-
-            #upstart-job
-            description "Configure and start CloudWatch Logs agent on Amazon ECS container instance"
-            author "Amazon Web Services"
-            start on started ecs
-
-            script
-              exec 2>>/var/log/ecs/cloudwatch-logs-start.log
-              set -x
-              
-              until curl -s http://localhost:51678/v1/metadata
-              do
-                sleep 1	
-              done
-
-              # Grab the cluster and container instance ARN from instance metadata
-              cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
-              container_instance_id=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $2}' )
-              
-              # Replace the cluster name and container instance ID placeholders with the actual values
-              sed -i -e "s/{cluster}/$cluster/g" /etc/awslogs/awslogs.conf
-              sed -i -e "s/{container_instance_id}/$container_instance_id/g" /etc/awslogs/awslogs.conf
-              
-              service awslogs start
-              chkconfig awslogs on
-            end script
-            --==BOUNDARY==--
-
-
-
-###################
-# Spot fleet
-###################
-  SpotFleet:
-    Condition: SpotFleetCond
-    Type: AWS::EC2::SpotFleet
-    Properties:
-      SpotFleetRequestConfigData:
-        AllocationStrategy: diversified
-        SpotPrice: '0.1'
-        IamFleetRole: !GetAtt IAMFleetRole.Arn
-        TargetCapacity: !Ref ASGDesiredCapacity
-        LaunchSpecifications:
-        - EbsOptimized: 'false'
-          WeightedCapacity: 1
-          IamInstanceProfile: 
-            Arn: !GetAtt EC2InstanceProfile.Arn
-          InstanceType: m3.medium
-          ImageId: !Ref ECSAMI
-          # ImageId: !GetAtt AMIInfo.Id
-          # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName: !Ref SshKeyName
-            # !If 
-            #   - HasSshKeyName
-            #   - !Ref SshKeyName
-            #   - !Ref AWS::NoValue
-          Monitoring:
-            Enabled: 'true'
-          NetworkInterfaces:
-            - AssociatePublicIpAddress: true
-              DeviceIndex: 0
-              SubnetId: !Ref PublicZoneA
-              Groups:
-                - Fn::GetAtt:
-                  - SgEC2
-                  - GroupId
-          UserData: 
-            "Fn::Base64": 
-              !Sub |
-                #!/bin/bash
-                yum update -y
-                yum install -y aws-cfn-bootstrap aws-cli
-                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                aws --region ${AWS::Region} ec2 create-tags --resources $instance_id  --tags \
-                Key=Name,Value="ecs-${AWS::StackName}-spot"               
-                echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
-                # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
-                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SpotFleet --region ${AWS::Region} 
-
-        - EbsOptimized: 'false'
-          WeightedCapacity: 1
-          IamInstanceProfile: 
-            Arn: !GetAtt EC2InstanceProfile.Arn
-          InstanceType: m3.medium
-          ImageId: !Ref ECSAMI
-          # ImageId: !GetAtt AMIInfo.Id
-          # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName: !Ref SshKeyName
-            # !If 
-            #   - HasSshKeyName
-            #   - !Ref SshKeyName
-            #   - !Ref AWS::NoValue
-          Monitoring:
-            Enabled: 'true'
-          NetworkInterfaces:
-            - AssociatePublicIpAddress: true
-              DeviceIndex: 0
-              SubnetId: !Ref PublicZoneB
-              Groups:
-                - Fn::GetAtt:
-                  - SgEC2
-                  - GroupId
-          UserData: 
-            "Fn::Base64": 
-              !Sub |
-                #!/bin/bash
-                yum update -y
-                yum install -y aws-cfn-bootstrap aws-cli
-                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                aws --region ${AWS::Region} ec2 create-tags --resources $instance_id  --tags \
-                Key=Name,Value="ecs-${AWS::StackName}-spot"               
-                echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
-                # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
-                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SpotFleet --region ${AWS::Region} 
-
-        - EbsOptimized: 'false'
-          WeightedCapacity: 1
-          IamInstanceProfile: 
-            Arn: !GetAtt EC2InstanceProfile.Arn
-          InstanceType: m4.large
-          ImageId: !Ref ECSAMI
-          # ImageId: !GetAtt AMIInfo.Id
-          # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName: !Ref SshKeyName
-            # !If 
-            #   - HasSshKeyName
-            #   - !Ref SshKeyName
-            #   - !Ref AWS::NoValue
-          Monitoring:
-            Enabled: 'true'
-          NetworkInterfaces:
-            - AssociatePublicIpAddress: true
-              DeviceIndex: 0
-              SubnetId: !Ref PublicZoneA
-              Groups:
-                - Fn::GetAtt:
-                  - SgEC2
-                  - GroupId
-          UserData: 
-            "Fn::Base64": 
-              !Sub |
-                #!/bin/bash
-                yum update -y
-                yum install -y aws-cfn-bootstrap aws-cli
-                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                aws --region ${AWS::Region} ec2 create-tags --resources $instance_id  --tags \
-                Key=Name,Value="ecs-${AWS::StackName}-spot"               
-                echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
-                # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
-                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SpotFleet --region ${AWS::Region} 
-
-        - EbsOptimized: 'false'
-          WeightedCapacity: 1
-          IamInstanceProfile: 
-            Arn: !GetAtt EC2InstanceProfile.Arn
-          InstanceType: m4.large
-          ImageId: !Ref ECSAMI
-          # ImageId: !GetAtt AMIInfo.Id
-          # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName: !Ref SshKeyName
-            # !If 
-            #   - HasSshKeyName
-            #   - !Ref SshKeyName
-            #   - !Ref AWS::NoValue
-          Monitoring:
-            Enabled: 'true'
-          NetworkInterfaces:
-            - AssociatePublicIpAddress: true
-              DeviceIndex: 0
-              SubnetId: !Ref PublicZoneB
-              Groups:
-                - Fn::GetAtt:
-                  - SgEC2
-                  - GroupId
-          UserData: 
-            "Fn::Base64": 
-              !Sub |
-                #!/bin/bash
-                yum update -y
-                yum install -y aws-cfn-bootstrap aws-cli
-                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                aws --region ${AWS::Region} ec2 create-tags --resources $instance_id  --tags \
-                Key=Name,Value="ecs-${AWS::StackName}-spot"               
-                echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
-                # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
-                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SpotFleet --region ${AWS::Region} 
-
-        - EbsOptimized: 'false'
-          WeightedCapacity: 1
-          IamInstanceProfile: 
-            Arn: !GetAtt EC2InstanceProfile.Arn
-          InstanceType: c4.large
-          ImageId: !Ref ECSAMI
-          # ImageId: !GetAtt AMIInfo.Id
-          # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName: !Ref SshKeyName
-            # !If 
-            #   - HasSshKeyName
-            #   - !Ref SshKeyName
-            #   - !Ref AWS::NoValue
-          Monitoring:
-            Enabled: 'true'
-          NetworkInterfaces:
-            - AssociatePublicIpAddress: true
-              DeviceIndex: 0
-              SubnetId: !Ref PublicZoneA
-              Groups:
-                - Fn::GetAtt:
-                  - SgEC2
-                  - GroupId
-          UserData: 
-            "Fn::Base64": 
-              !Sub |
-                #!/bin/bash
-                yum update -y
-                yum install -y aws-cfn-bootstrap aws-cli
-                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                aws --region ${AWS::Region} ec2 create-tags --resources $instance_id  --tags \
-                Key=Name,Value="ecs-${AWS::StackName}-spot"               
-                echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
-                # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
-                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SpotFleet --region ${AWS::Region} 
-
-        - EbsOptimized: 'false'
-          WeightedCapacity: 1
-          IamInstanceProfile: 
-            Arn: !GetAtt EC2InstanceProfile.Arn
-          InstanceType: c4.large
-          ImageId: !Ref ECSAMI
-          # ImageId: !GetAtt AMIInfo.Id
-          # ImageId: !GetAtt AMIInfoStack.Outputs.AmiId
-          KeyName: !Ref SshKeyName
-            # !If 
-            #   - HasSshKeyName
-            #   - !Ref SshKeyName
-            #   - !Ref AWS::NoValue
-          Monitoring:
-            Enabled: 'true'
-          NetworkInterfaces:
-            - AssociatePublicIpAddress: true
-              DeviceIndex: 0
-              SubnetId: !Ref PublicZoneB
-              Groups:
-                - Fn::GetAtt:
-                  - SgEC2
-                  - GroupId
-          UserData: 
-            "Fn::Base64": 
-              !Sub |
-                #!/bin/bash
-                yum update -y
-                yum install -y aws-cfn-bootstrap aws-cli
-                instance_id=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
-                aws --region ${AWS::Region} ec2 create-tags --resources $instance_id  --tags \
-                Key=Name,Value="ecs-${AWS::StackName}-spot"               
-                echo ECS_CLUSTER="${AWS::StackName}-ecs-cluster" >> /etc/ecs/ecs.config
-                # /opt/aws/bin/cfn-init -v -s ${AWS::StackId} -r ASGLC --region ${AWS::Region}
-                /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SpotFleet --region ${AWS::Region} 
-
-
-
-###################
-# ASG
-###################
+  # TG:
+  #   Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+  #   Properties:
+  #     HealthCheckIntervalSeconds: 15
+  #     HealthCheckPath: /
+  #     # HealthCheckPort: String
+  #     HealthCheckProtocol: HTTP
+  #     HealthCheckTimeoutSeconds: 5
+  #     HealthyThresholdCount: 2
+  #     # Matcher: Matcher
+  #     Name: !Sub "${ECSDefaultCluster}"
+  #     Port: !Ref TargetGroupPort
+  #     Protocol: HTTP
+  #     TargetType: instance
+  #     UnhealthyThresholdCount: 2
+  #     VpcId: !Ref VpcId
 
   ASGDefault:
-    Condition: EnableASGCond
-    Type: "AWS::AutoScaling::AutoScalingGroup"
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT15M
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: !Ref ASGDesiredCapacity
+      #LaunchConfigurationName: !Ref NodeLaunchConfig
+      # LaunchTemplate: 
+      #   LaunchTemplateId: !Ref MyLaunchTemplate
+      #   Version: !GetAtt MyLaunchTemplate.LatestVersionNumber
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandAllocationStrategy: prioritized
+          OnDemandBaseCapacity: !Ref OnDemandBaseCapacity
+          OnDemandPercentageAboveBaseCapacity: !Ref OnDemandPercentageAboveBaseCapacity
+          SpotAllocationStrategy: lowest-price
+          SpotInstancePools: !Ref SpotInstancePools
+          # SpotMaxPrice: String
+        LaunchTemplate:
+          LaunchTemplateSpecification: 
+            LaunchTemplateId: !Ref MyLaunchTemplate
+            # LaunchTemplateName: String
+            Version: !GetAtt MyLaunchTemplate.LatestVersionNumber
+          Overrides: 
+            - InstanceType: !Select [0, !Split [ ",", !Ref InstanceTypesOverride ] ]
+            - InstanceType: !Select [1, !Split [ ",", !Ref InstanceTypesOverride ] ]
+            - InstanceType: !Select [2, !Split [ ",", !Ref InstanceTypesOverride ] ]
+      MinSize: !Ref ASGMinSize
+      MaxSize: !Ref ASGMaxSize
+      # TargetGroupARNs: 
+      #   - !Ref TG
+      VPCZoneIdentifier:
+        !Ref SubnetIds
+      Tags:
+      - Key: Name
+        Value: !Sub "${ECSDefaultCluster}-ASG-Node"
+        PropagateAtLaunch: 'true'
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: !Ref ASGMinSize
-        MaxBatchSize: 1
-        PauseTime: PT15M
-        WaitOnResourceSignals: true
-    Properties:
-      AvailabilityZones:
-        -
-          Fn::Select:
-            - 0 
-            - Fn::GetAZs: ""
-        -
-          Fn::Select:
-            - 1
-            - Fn::GetAZs: ""
-      #Cooldown: String
-      HealthCheckGracePeriod: 60
-      # HealthCheckType: String
-      #InstanceId: String
-      LaunchConfigurationName: !Ref ASGLC
-      #LoadBalancerNames:
-      #  - 
-      MetricsCollection:
-        - Granularity: 1Minute
-      MaxSize: !Ref ASGMaxSize
-      MinSize: 
-        !If
-          - EnableASGCond
-          - !Ref ASGMinSize
-          - 0
-      DesiredCapacity: 
-        !If
-          - EnableASGCond
-          - !Ref ASGDesiredCapacity
-          - 0
-      NotificationConfigurations:
-        - !If  
-          - ECSLambdaDrainCond
-          - TopicARN: !Ref ASGSNSTopic
-            NotificationTypes:
-            - autoscaling:EC2_INSTANCE_LAUNCH
-            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
-            - autoscaling:EC2_INSTANCE_TERMINATE
-            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
-          - TopicARN: !Ref EmptySNSTopic
-            NotificationTypes:
-            - autoscaling:EC2_INSTANCE_LAUNCH
-            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
-            - autoscaling:EC2_INSTANCE_TERMINATE
-            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
-      # PlacementGroup: String
-      Tags:
-        - 
-          Key: Name
-          #Value: {"Fn::Sub" : "${StackName}-cfn-nginx"}
-          Value: !Sub
-            - "${StackName}-ecs-instance"
-            - StackName: !Ref AWS::StackName
-          PropagateAtLaunch: true
-        - 
-          Key: ECS_CLUSTER
-          Value: !Sub ${AWS::StackName}-ecs-cluster
-          PropagateAtLaunch: true
+        MinInstancesInService: !Ref ASGDesiredCapacity
+        MaxBatchSize: '1'
+        PauseTime: 'PT5M'
+        
 
-      # TargetGroupARNs:
-      #   !If 
-      #     - UseALBCond
-      #     - [ !Ref publicALBTargetGroup ]
-      #     - !Ref AWS::NoValue
+  ASG2:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: !Ref ASGDesiredCapacity2
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandAllocationStrategy: prioritized
+          OnDemandBaseCapacity: !Ref OnDemandBaseCapacity2
+          OnDemandPercentageAboveBaseCapacity: !Ref OnDemandPercentageAboveBaseCapacity2
+          SpotAllocationStrategy: lowest-price
+          SpotInstancePools: !Ref SpotInstancePools2
+          # SpotMaxPrice: String
+        LaunchTemplate:
+          LaunchTemplateSpecification: 
+            LaunchTemplateId: !Ref MyLaunchTemplate
+            # LaunchTemplateName: String
+            Version: !GetAtt MyLaunchTemplate.LatestVersionNumber
+          Overrides: 
+            - InstanceType: !Select [0, !Split [ ",", !Ref InstanceTypesOverride2 ] ]
+            - InstanceType: !Select [1, !Split [ ",", !Ref InstanceTypesOverride2 ] ]
+            - InstanceType: !Select [2, !Split [ ",", !Ref InstanceTypesOverride2 ] ]
+      MinSize: !Ref ASGMinSize2
+      MaxSize: !Ref ASGMaxSize2
+      # TargetGroupARNs: 
+      #   - !Ref TG
       VPCZoneIdentifier:
-        - !Ref PublicZoneA
-        - !Ref PublicZoneB
+        !Ref SubnetIds
+      Tags:
+      - Key: Name
+        Value: !Sub "${ECSDefaultCluster}-ASG2-Node"
+        PropagateAtLaunch: 'true'
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        MinInstancesInService: !Ref ASGDesiredCapacity2
+        MaxBatchSize: '1'
+        PauseTime: 'PT5M'
+
+  LCH:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref ASGDefault
+      HeartbeatTimeout: 60
+      DefaultResult: CONTINUE
+      LifecycleHookName: !Sub "${ASGDefault}-LCH"
+      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING
+ 
+  LCH2:
+    Type: AWS::AutoScaling::LifecycleHook
+    Properties:
+      AutoScalingGroupName: !Ref ASG2
+      HeartbeatTimeout: 60
+      DefaultResult: CONTINUE
+      LifecycleHookName: !Sub "${ASGDefault}-LCH2"
+      LifecycleTransition: autoscaling:EC2_INSTANCE_TERMINATING 
+  
+#
+# Launch Template
+#
+  MyLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub "eksLaunchTemplate-${AWS::StackName}"
+      LaunchTemplateData: 
+        # SecurityGroupIds: 
+        #   - !Ref NodeSecurityGroup
+        TagSpecifications: 
+          -
+            ResourceType: instance
+            Tags:
+              - Key: Name
+                Value: !Sub "${ECSDefaultCluster}-ASG-Node"
+
+        UserData: 
+          "Fn::Base64": 
+            !Sub |
+              Content-Type: multipart/mixed; boundary="==BOUNDARY=="
+              MIME-Version: 1.0
+  
+              --==BOUNDARY==
+              Content-Type: text/x-shellscript; charset="us-ascii"
+              #!/bin/bash
+              echo ECS_CLUSTER=${AWS::StackName}-ecs-cluster >> /etc/ecs/ecs.config
+              echo ECS_DISABLE_IMAGE_CLEANUP=false >> /etc/ecs/ecs.config
+    
+              iid=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+              export AWS_DEFAULT_REGION=${AWS::Region}
+              ilc=`aws ec2 describe-instances --instance-ids  $iid  --query 'Reservations[0].Instances[0].InstanceLifecycle' --output text`
+              if [ "$ilc" == "spot" ]; then
+                echo ECS_INSTANCE_ATTRIBUTES='{"instance-purchase-option":"spot"}' >> /etc/ecs/ecs.config
+              else
+                echo ECS_INSTANCE_ATTRIBUTES='{"instance-purchase-option":"ondemand"}' >> /etc/ecs/ecs.config
+              fi
+              
+              yum update -y
+              # Install awslogs and the jq JSON parser
+              yum install -y awslogs jq aws-cfn-bootstrap
+  
+              # Inject the CloudWatch Logs configuration file contents
+              cat > /etc/awslogs/awslogs.conf <<- EOF
+              [general]
+              state_file = /var/lib/awslogs/agent-state        
+              
+              [/var/log/dmesg]
+              file = /var/log/dmesg
+              log_group_name = /aws/ECS/var/log/dmesg
+              log_stream_name = {cluster}/{container_instance_id}
+  
+              [/var/log/messages]
+              file = /var/log/messages
+              log_group_name = /aws/ECS/var/log/messages
+              log_stream_name = {cluster}/{container_instance_id}
+              datetime_format = %b %d %H:%M:%S
+  
+              [/var/log/docker]
+              file = /var/log/docker
+              log_group_name = /aws/ECS/var/log/docker
+              log_stream_name = {cluster}/{container_instance_id}
+              datetime_format = %Y-%m-%dT%H:%M:%S.%f
+  
+              [/var/log/ecs/ecs-init.log]
+              file = /var/log/ecs/ecs-init.log.*
+              log_group_name = /aws/ECS/var/log/ecs/ecs-init.log
+              log_stream_name = {cluster}/{container_instance_id}
+              datetime_format = %Y-%m-%dT%H:%M:%SZ
+  
+              [/var/log/ecs/ecs-agent.log]
+              file = /var/log/ecs/ecs-agent.log.*
+              log_group_name = /aws/ECS/var/log/ecs/ecs-agent.log
+              log_stream_name = {cluster}/{container_instance_id}
+              datetime_format = %Y-%m-%dT%H:%M:%SZ
+  
+              [/var/log/ecs/audit.log]
+              file = /var/log/ecs/audit.log.*
+              log_group_name = /aws/ECS/var/log/ecs/audit.log
+              log_stream_name = {cluster}/{container_instance_id}
+              datetime_format = %Y-%m-%dT%H:%M:%SZ
+  
+              EOF
+  
+              --==BOUNDARY==
+              Content-Type: text/x-shellscript; charset="us-ascii"
+              #!/bin/bash
+              # Set the region to send CloudWatch Logs data to (the region where the container instance is located)
+              region=$(curl -s 169.254.169.254/latest/dynamic/instance-identity/document | jq -r .region)
+              sed -i -e "s/region = us-east-1/region = $region/g" /etc/awslogs/awscli.conf
+  
+              start ecs
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource ASGDefault --region ${AWS::Region} 
+  
+              --==BOUNDARY==
+              Content-Type: text/upstart-job; charset="us-ascii"
+  
+              #upstart-job
+              description "Configure and start CloudWatch Logs agent on Amazon ECS container instance"
+              author "Amazon Web Services"
+              start on started ecs
+  
+              script
+                exec 2>>/var/log/ecs/cloudwatch-logs-start.log
+                set -x
+                
+                until curl -s http://localhost:51678/v1/metadata
+                do
+                  sleep 1	
+                done
+  
+                # Grab the cluster and container instance ARN from instance metadata
+                cluster=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .Cluster')
+                container_instance_id=$(curl -s http://localhost:51678/v1/metadata | jq -r '. | .ContainerInstanceArn' | awk -F/ '{print $2}' )
+                
+                # Replace the cluster name and container instance ID placeholders with the actual values
+                sed -i -e "s/{cluster}/$cluster/g" /etc/awslogs/awslogs.conf
+                sed -i -e "s/{container_instance_id}/$container_instance_id/g" /etc/awslogs/awslogs.conf
+                
+                service awslogs start
+                chkconfig awslogs on
+              end script
+              --==BOUNDARY==--
+                     
+        IamInstanceProfile: 
+          Arn: !GetAtt EC2InstanceProfile.Arn
+        KeyName: !Ref SshKeyName
+        NetworkInterfaces: 
+          - 
+            DeviceIndex: 0
+            AssociatePublicIpAddress:
+              !If
+                - IsASGAutoAssignPublicIp
+                - 'true'
+                - 'false'
+            SubnetId: !Select [0, !Ref SubnetIds]
+            Groups: 
+              - !Ref NodeSecurityGroup
+              # !If
+              #   - CreateNewNodeSG
+              #   - 
+              #     - !Ref NodeSecurityGroup
+              #   - !Split [ ",", !Ref ExistingNodeSecurityGroups ]
+        ImageId: !Ref ECSAMI
+          # !If
+          #   - PreferredDefaultAMI
+          #   - !Ref LatestAMIId
+          #   # - !FindInMap [AMIMap, !Ref "AWS::Region", ami ]
+          #   - !Ref NodeImageId        
+
+  
 
   ECSDefaultCluster:
-    Type: "AWS::ECS::Cluster"
+    Type: AWS::ECS::Cluster
     Properties:
       ClusterName: !Sub ${AWS::StackName}-ecs-cluster
 
@@ -1300,26 +1273,27 @@ Resources:
           -
             Name: empty
         TaskRoleArn: !GetAtt ECSTaskRole.Arn
+        ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
         Family: !Sub ${AppName}-${ECSDefaultCluster}
-        PlacementConstraints: 
-          - 
-            Type: memberOf
-            Expression: !Sub "attribute:instance-purchase-option == ${InstancePurchaseOption}"
+        # PlacementConstraints: 
+        #   - 
+        #     Type: memberOf
+        #     Expression: !Sub "attribute:instance-purchase-option == ${InstancePurchaseOption}"
         ContainerDefinitions: 
           - 
             Name: Caddy
             #Image: "abiosoft/caddy:php"
             # Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
-            Image:
-              !If
-                - UseBuiltInTaskDefinitionCond
-                # - "abiosoft/caddy:php"
-                - "pahud/caddy"
-                - !If
-                  - EmptyTag
-                  # - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${ECSTaskInfo.Tag}
-                  - !Sub ${ECSTaskInfo.Image}
-                  - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
+            Image: !Ref CaddyImage
+              # !If
+              #   - UseBuiltInTaskDefinitionCond
+              #   # - "abiosoft/caddy:php"
+              #   - "pahud/caddy"
+              #   - !If
+              #     - EmptyTag
+              #     # - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${ECSTaskInfo.Tag}
+              #     - !Sub ${ECSTaskInfo.Image}
+              #     - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
             Cpu: "512"
             PortMappings: 
               - 
@@ -1335,9 +1309,10 @@ Resources:
               -
                 Name: SERVICE_ENV
                 Value: prod
-              -
-                Name: foo
-                Value: bar
+            Secrets:
+               - { Name: "ECSYourName", ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECSYourName-${AWS::StackName}" }
+               - { Name: "ECSYourPassword", ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECSYourPassword-${AWS::StackName}" }
+
             MountPoints:
               -
                 ContainerPath: /var/log
@@ -1349,98 +1324,28 @@ Resources:
                 awslogs-region: !Ref AWS::Region
                 awslogs-group: !Sub /aws/ECS/${AppName}-${AWS::StackName}
                 awslogs-stream-prefix: !Ref AppName
-          - 
-            Name: awslogs
-            Image: "pahud/awslogs:caddy"
-            Cpu: "128"
-            Memory: "128"
-            Ulimits:
-              - Name: nofile
-                HardLimit: "10240"
-                SoftLimit: "10240"
-            Essential: "true"
-            MountPoints:
-              -
-                ContainerPath: /var/log/caddy
-                SourceVolume: empty
-                ReadOnly: false
-            LogConfiguration:
-              LogDriver: "awslogs"
-              Options:
-                awslogs-region: !Ref AWS::Region
-                awslogs-group: !Sub /aws/ECS/${AppName}-awslogs-${AWS::StackName}
-                awslogs-stream-prefix: !Ref AppName
+          # - 
+          #   Name: awslogs
+          #   Image: "pahud/awslogs:caddy"
+          #   Cpu: "128"
+          #   Memory: "128"
+          #   Ulimits:
+          #     - Name: nofile
+          #       HardLimit: "10240"
+          #       SoftLimit: "10240"
+          #   Essential: "true"
+          #   MountPoints:
+          #     -
+          #       ContainerPath: /var/log/caddy
+          #       SourceVolume: empty
+          #       ReadOnly: false
+          #   LogConfiguration:
+          #     LogDriver: "awslogs"
+          #     Options:
+          #       awslogs-region: !Ref AWS::Region
+          #       awslogs-group: !Sub /aws/ECS/${AppName}-awslogs-${AWS::StackName}
+          #       awslogs-stream-prefix: !Ref AppName
 
-  ECSCaddyCanaryTD:
-      Type: AWS::ECS::TaskDefinition
-      Properties: 
-        TaskRoleArn: !GetAtt ECSTaskRole.Arn
-        Family: !Sub ${AppName}-${ECSDefaultCluster}
-        ContainerDefinitions: 
-          - 
-            Name: Caddy
-            #Image: "abiosoft/caddy:php"
-            # Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
-            Image:
-              !If
-                - UseBuiltInTaskDefinitionCond
-                # - "abiosoft/caddy:php"
-                - "pahud/caddy"
-                - !If
-                  - EmptyCanaryTag
-                  - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${Tag}
-                  - !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${Repository}:${CanaryTag}
-            Cpu: "512"
-            PortMappings: 
-              - 
-                ContainerPort: 2015
-                HostPort: 0
-            Memory: "1024"
-            Ulimits:
-              - Name: nofile
-                HardLimit: "10240"
-                SoftLimit: "10240"
-              
-            Essential: "true"
-            LogConfiguration:
-              LogDriver: "awslogs"
-              Options:
-                awslogs-region: !Ref AWS::Region
-                awslogs-group: !Sub /aws/ECS/${AppName}-${AWS::StackName}
-                awslogs-stream-prefix: !Ref AppName
-
-  # ECSAgentLoggerTD:
-  #     Type: AWS::ECS::TaskDefinition
-  #     Properties: 
-  #       Volumes:
-  #         -
-  #           Name: var-log-ecs
-  #           Host:
-  #             SourcePath: /var/log/ecs
-  #       TaskRoleArn: !GetAtt ECSTaskRole.Arn
-  #       Family: !Sub ${AppName}-${ECSDefaultCluster}-ecsAgent-log
-  #       ContainerDefinitions: 
-  #         - 
-  #           Name: ecs-agent-logger-per-host
-  #           Image: pahud/caddy
-  #           Command: 
-  #             - "tail"
-  #             - "-F"
-  #             - "/var/log/ecs/*"
-  #           Cpu: "1"
-  #           Memory: "128"
-  #           MountPoints:
-  #             -
-  #               ContainerPath: /var/log/ecs
-  #               SourceVolume: var-log-ecs
-  #               ReadOnly: false
-  #           Essential: "true"
-  #           LogConfiguration:
-  #             LogDriver: "awslogs"
-  #             Options:
-  #               awslogs-region: !Ref AWS::Region
-  #               awslogs-group: !Sub /aws/ECS/${AppName}-ecs-agent-${AWS::StackName}
-  #               awslogs-stream-prefix: ecs-agent
 
 
   ECSService:
@@ -1465,45 +1370,6 @@ Resources:
           Field: attribute:ecs.availability-zone
         - Type: spread
           Field: host
-
-  ECSServiceCanary:
-    DependsOn: [publicALB, publicALBTargetGroup, ALBListener]
-    Type: "AWS::ECS::Service"
-    Properties: 
-      Cluster: !Ref ECSDefaultCluster
-      DeploymentConfiguration:
-        MaximumPercent: !Ref MaxPercent
-        MinimumHealthyPercent: !Ref MinPercent
-      # DesiredCount: !Ref ServiceDesiredCount
-      DesiredCount: !Ref CanaryDesiredCount
-      LoadBalancers: 
-          - ContainerName: !Ref AppName
-            ContainerPort: 2015
-            TargetGroupArn: !Ref publicALBTargetGroup
-      Role: !Ref ECSServiceRole
-      #TaskDefinition: !Ref ECSWebTD
-      TaskDefinition: !Ref ECSCaddyCanaryTD
-      ServiceName: !Sub "${AWS::StackName}-${AppName}-Canary"
-      PlacementStrategies: 
-        - Type: spread
-          Field: attribute:ecs.availability-zone
-        - Type: spread
-          Field: host
-
-  # ECSAgentLogger:
-  #   # DependsOn: [publicALB, publicALBTargetGroup, ALBListener]
-  #   Type: "AWS::ECS::Service"
-  #   Properties: 
-  #     Cluster: !Ref ECSDefaultCluster
-  #     DeploymentConfiguration:
-  #       MaximumPercent: !Ref MaxPercent
-  #       MinimumHealthyPercent: !Ref MinPercent
-  #     DesiredCount: !Ref ASGDesiredCapacity
-  #     # Role: !Ref ECSServiceRole
-  #     TaskDefinition: !Ref ECSAgentLoggerTD
-  #     ServiceName: !Sub "${AWS::StackName}-ecs-agent-logger-per-host"
-  #     PlacementConstraints: 
-  #       - Type: distinctInstance
 
 
   ECSscalableTarget:
@@ -1615,7 +1481,7 @@ Resources:
 # Scaling Policies for Autoscaling Group
 ######################          
   ASGscalingPolicy01:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
@@ -1628,7 +1494,7 @@ Resources:
           # MetricIntervalUpperBound: 60
           ScalingAdjustment: 100        
   ASGscalingPolicy02:
-    Condition: EnableASGCond         
+    # Condition: EnableASGCond         
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
@@ -1642,7 +1508,7 @@ Resources:
           ScalingAdjustment: 200  
 
   ASGscalingPolicy03:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
@@ -1656,7 +1522,7 @@ Resources:
           ScalingAdjustment: 200  
 
   ASGscalingPolicy04:
-    Condition: EnableASGCond        
+    # Condition: EnableASGCond        
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
@@ -1670,7 +1536,7 @@ Resources:
       #     ScalingAdjustment: -30
 
   ASGscalingPolicy05:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
@@ -1687,7 +1553,7 @@ Resources:
 # Alarm to Scale ASG
 ######################
   ASGCPUHighAlarmScaleOut:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '1'
@@ -1704,7 +1570,7 @@ Resources:
       MetricName: CPUUtilization
 
   ECSClusterCPURsvHighScaleOut:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '5'
@@ -1721,7 +1587,7 @@ Resources:
       MetricName: CPUReservation
 
   ECSClusterMemRsvHighScaleOut:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '5'
@@ -1739,7 +1605,7 @@ Resources:
 
 
   ECSClusterCPURsvLowScaleIn:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '20'
@@ -1756,7 +1622,7 @@ Resources:
       MetricName: CPUReservation
 
   ECSClusterMemRsvLowScaleIn:
-    Condition: EnableASGCond
+    # Condition: EnableASGCond
     Type: AWS::CloudWatch::Alarm
     Properties:
       EvaluationPeriods: '20'
@@ -1969,7 +1835,7 @@ Outputs:
         - !GetAZs ""
   VpcId:
     Value:
-      !Ref Vpc
+      !Ref VpcId
     Description: The VPC ID of the created VPC  
     Export:
       Name: 
@@ -1977,6 +1843,7 @@ Outputs:
           - ${StackName}-VpcId
           - StackName: !Ref AWS::StackName
   LoadBalancerURL:
+    Description: LoadBalancer URL for the demo service
     Value:
       !Sub
         - 'http://${LBDNS}'
@@ -1984,6 +1851,7 @@ Outputs:
           LBDNS: !GetAtt publicALB.DNSName
 
   PHPErrorURL:
+    Description: click this URL to increase 500 errors
     Value:
       !Sub
         - 'http://${LBDNS}/error.php'
@@ -1996,35 +1864,10 @@ Outputs:
   ECSServiceName: 
     Value: !GetAtt ECSService.Name
 
-  ECSTaskDefImageTag:
-    Value: !GetAtt ECSTaskInfo.Tag
-
-  ECSTaskDefImage:
-    Value: !GetAtt ECSTaskInfo.Image
-
   Tag:
     Value: !Ref Tag
-
-  CanaryTag:
-    Value: !Ref CanaryTag
-
-  PublicZoneA:
-    Value:
-      !Ref PublicZoneA
-    Description: Public Zone A
-    Export:
-      Name: 
-        "Fn::Sub": 
-          - ${StackName}-PublicZoneA
-          - StackName: !Ref AWS::StackName
-  PublicZoneB:
-    Value:
-      !Ref PublicZoneB
-    Description: Public Zone B
-    Export:
-      Name: 
-        "Fn::Sub": 
-          - ${StackName}-PublicZoneB
-          - StackName: !Ref AWS::StackName
+    
+  DockerImage:
+    Value: !Ref CaddyImage
 
 

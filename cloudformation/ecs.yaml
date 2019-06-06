@@ -1,0 +1,304 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Mappings:
+  InstanceType:
+    default:
+      web: m4.large
+
+Parameters:
+  SshKeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
+    
+  VpcId:
+    Description: The VPC of the worker instances
+    Type: AWS::EC2::VPC::Id
+
+  SubnetIds:
+    Description: Select 3 subnets where workers can be created.
+    Type: String
+
+  NodeInstanceType:
+    Description: Default EC2 instance type for the node instances.
+    Type: String
+    Default: t3.large
+    AllowedValues:
+    - t2.small
+    - t2.medium
+    - t2.large
+    - t2.xlarge
+    - t2.2xlarge
+    - t3.nano
+    - t3.micro
+    - t3.small
+    - t3.medium
+    - t3.large
+    - t3.xlarge
+    - t3.2xlarge
+    - m3.medium
+    - m3.large
+    - m3.xlarge
+    - m3.2xlarge
+    - m4.large
+    - m4.xlarge
+    - m4.2xlarge
+    - m4.4xlarge
+    - m4.10xlarge
+    - m5.large
+    - m5.xlarge
+    - m5.2xlarge
+    - m5.4xlarge
+    - m5.12xlarge
+    - m5.24xlarge
+    - c4.large
+    - c4.xlarge
+    - c4.2xlarge
+    - c4.4xlarge
+    - c4.8xlarge
+    - c5.large
+    - c5.xlarge
+    - c5.2xlarge
+    - c5.4xlarge
+    - c5.9xlarge
+    - c5.18xlarge
+    - i3.large
+    - i3.xlarge
+    - i3.2xlarge
+    - i3.4xlarge
+    - i3.8xlarge
+    - i3.16xlarge
+    - r3.xlarge
+    - r3.2xlarge
+    - r3.4xlarge
+    - r3.8xlarge
+    - r4.large
+    - r4.xlarge
+    - r4.2xlarge
+    - r4.4xlarge
+    - r4.8xlarge
+    - r4.16xlarge
+    - x1.16xlarge
+    - x1.32xlarge
+    - p2.xlarge
+    - p2.8xlarge
+    - p2.16xlarge
+    - p3.2xlarge
+    - p3.8xlarge
+    - p3.16xlarge
+    - p3dn.24xlarge
+    - r5.large
+    - r5.xlarge
+    - r5.2xlarge
+    - r5.4xlarge
+    - r5.12xlarge
+    - r5.24xlarge
+    - r5d.large
+    - r5d.xlarge
+    - r5d.2xlarge
+    - r5d.4xlarge
+    - r5d.12xlarge
+    - r5d.24xlarge
+    - z1d.large
+    - z1d.xlarge
+    - z1d.2xlarge
+    - z1d.3xlarge
+    - z1d.6xlarge
+    - z1d.12xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+    
+  # InstancePurchaseOption: 
+  #   Type: String
+  #   AllowedValues: ["spot", "on-demand"]
+  #   Default: spot
+  #   Description: spot or on-demand EC2 instance(s)
+  # SpotPrice:
+  #   Type: Number
+  #   Description: spot price for spot instances
+  #   Default: 0.02
+  CaddyImage:
+    Description: Caddy docker image URI
+    Type: String
+    Default: pahud/caddy:ecs-cfn-refarch
+  #
+  # For the 1st ASG
+  #
+  ASGDesiredCapacity:
+    Type: Number
+    Description: instance count under AutoScalingGroup
+    Default: 2
+  ASGMaxSize:
+    Type: Number
+    Description: max instance count under AutoScalingGroup
+    Default: 4
+  ASGMinSize:
+    Type: Number
+    Description: min instance count under AutoScalingGroup
+    Default: 0
+  OnDemandBaseCapacity:
+    Type: Number
+    Description: On-Demand Base Capacity
+    Default: 0
+  OnDemandPercentageAboveBaseCapacity:
+    Type: Number
+    Description: "on-demand percentage above base capacity(0-100)"
+    Default: 0
+  SpotInstancePools:
+    Type: Number
+    Description: "spot instance pools(1-20)"
+    Default: 9
+  InstanceTypesOverride:
+    Type: String
+    Description: "multiple instance types to override(seperated by comma)"
+    Default: "t3.small,t3.medium,t3.large"    
+  ASGAutoAssignPublicIp:
+    Type: String
+    Description: "auto assign public IP address for ASG instances"
+    AllowedValues:
+      - "yes"
+      - "no"
+    Default: "yes"
+  #
+  # For the 2nd ASG
+  #
+  ASGDesiredCapacity2:
+    Type: Number
+    Description: instance count under AutoScalingGroup
+    Default: 2
+  ASGMaxSize2:
+    Type: Number
+    Description: max instance count under AutoScalingGroup
+    Default: 2
+  ASGMinSize2:
+    Type: Number
+    Description: min instance count under AutoScalingGroup
+    Default: 0
+  OnDemandBaseCapacity2:
+    Type: Number
+    Description: On-Demand Base Capacity
+    Default: 2
+  OnDemandPercentageAboveBaseCapacity2:
+    Type: Number
+    Description: "on-demand percentage above base capacity(0-100)"
+    Default: 100
+  SpotInstancePools2:
+    Type: Number
+    Description: "spot instance pools(1-20)"
+    Default: 9    
+  InstanceTypesOverride2:
+    Type: String
+    Description: "multiple instance types to override for 2nd ASG(seperated by comma)"
+    Default: "m4.large,m5.large,c5.large" 
+  ASGAutoAssignPublicIp2:
+    Type: String
+    Description: "auto assign public IP address for ASG instances"
+    AllowedValues:
+      - "yes"
+      - "no"
+    Default: "yes"
+    
+  UseALB:
+    Type: String
+    AllowedValues: ["yes", "no"]
+    Description: select yes if you'd like to use ALB
+    Default: "yes"
+  AppName:
+    Type: String
+    Description: select your ECS App Name
+    Default: Caddy
+  SNSMobileNumber:
+    Type: String
+    Description: "Your mobile number to receive SMS notification, starting with '+''"
+    Default: ""
+  Tag:
+    Type: String
+    Description: placeholder for Docker image tag generated by CodeBuild
+    Default: ""
+  Repository:
+    Type: String
+    Description: placeholder for ECR repository
+    Default: ""
+  MaxPercent:
+    Type: Number
+    Default: 100
+  MinPercent:
+    Type: Number
+    Default: 50
+  ServiceDesiredCount:
+    Type: Number
+    Default: 2
+  UseBuiltInTaskDefinition:
+    Type: String
+    Default: "yes"
+    Description: "select yes if you run this template standalone"
+    AllowedValues:
+      - "yes"
+      - "no"
+  S3BucketName:
+    Type: String
+    Description: >
+      OPTIONAL - Specifies the name of your AWS account S3 bucket in which the index.zip file is stored. index.zip contains the Python Lambda code index.py; Please download this from https://github.com/pahud/ecs-cfn-refarch/blob/master/lambdaFunctions/ecs_container_draining and upload to your S3 bucket.
+    Default: ""
+  ParameterStoreYourName:
+    Type: String
+    Default: "DefaultName"
+    Description: >
+      OPTIONAL - parameter string stored in EC2 Parameter Store
+  ParameterStoreYourPassword:
+    Type: String
+    Default: "DefaultPassword"
+    Description: >
+      OPTIONAL - parameter string stored in EC2 Parameter Store
+  ECSAMI:
+    Description: AMI ID
+    #Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Type: String
+    #Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
+
+  YamlBranch:
+    Description: "stable or dev"
+    Type: String
+    Default: "stable"
+    
+Resources:
+  MAIN:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/service-${YamlBranch}.yaml"
+      Parameters:
+        SshKeyName: !Ref SshKeyName
+        VpcId: !Ref VpcId
+        SubnetIds: !Ref SubnetIds
+        NodeInstanceType: !Ref NodeInstanceType
+        CaddyImage: !Ref CaddyImage
+        ASGDesiredCapacity: !Ref ASGDesiredCapacity
+        ASGMaxSize: !Ref ASGMaxSize
+        ASGMinSize: !Ref ASGMinSize
+        OnDemandBaseCapacity: !Ref OnDemandBaseCapacity
+        OnDemandPercentageAboveBaseCapacity: !Ref OnDemandPercentageAboveBaseCapacity
+        SpotInstancePools: !Ref SpotInstancePools
+        InstanceTypesOverride: !Ref InstanceTypesOverride
+        ASGAutoAssignPublicIp: !Ref ASGAutoAssignPublicIp
+        ASGDesiredCapacity2: !Ref ASGDesiredCapacity2
+        ASGMaxSize2: !Ref ASGMaxSize2
+        ASGMinSize2: !Ref ASGMinSize2
+        OnDemandBaseCapacity2: !Ref OnDemandBaseCapacity2
+        OnDemandPercentageAboveBaseCapacity2: !Ref OnDemandPercentageAboveBaseCapacity2
+        SpotInstancePools2: !Ref SpotInstancePools2
+        InstanceTypesOverride2: !Ref InstanceTypesOverride2  
+        ASGAutoAssignPublicIp2: !Ref ASGAutoAssignPublicIp2
+        UseALB: !Ref UseALB
+        AppName: !Ref AppName
+        SNSMobileNumber: !Ref SNSMobileNumber
+        Tag: !Ref Tag
+        Repository: !Ref Repository
+        MaxPercent: !Ref MaxPercent
+        MinPercent: !Ref MinPercent
+        ServiceDesiredCount: !Ref ServiceDesiredCount
+        UseBuiltInTaskDefinition: !Ref UseBuiltInTaskDefinition
+        S3BucketName: !Ref S3BucketName
+        ParameterStoreYourName: !Ref ParameterStoreYourName
+        ECSAMI: !Ref ECSAMI
+        
+        
+        
+  
