@@ -79,3 +79,12 @@ $ curl http://ecsdemo-MAIN-1M6ASY034M08X-alb-2131750000.ap-northeast-1.elb.amazo
 <h2>Your password is DefaultPassword!</h2>
 ```
 
+
+
+# clean up
+
+```bash
+# delete the stacks
+$ make delete-ecs-cluster
+```
+
