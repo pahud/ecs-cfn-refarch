@@ -12,7 +12,6 @@ YAML_BRANCH ?= stable
 ECS_YAML_URL ?= https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-$(YAML_BRANCH).yaml
 CLUSTER_STACK_NAME ?= ecsdemo
 CLUSTER_NAME ?= $(CLUSTER_STACK_NAME)
-# EKS_ADMIN_ROLE ?= arn:aws:iam::903779448426:role/AmazonEKSAdminRole
 REGION ?= ap-northeast-1
 SSH_KEY_NAME ?= 'aws-pahud'
 VPC_ID ?= vpc-e549a281
@@ -24,9 +23,7 @@ NodeAutoScalingGroupMinSize ?= 0
 NodeAutoScalingGroupDesiredSize ?= 2
 NodeAutoScalingGroupMaxSize ?= 5
 ASGAutoAssignPublicIp ?= yes
-ClusterVersion ?= latest
 InstanceTypesOverride ?= 't3.medium,t3.large,t3.xlarge'
-EnableNodeDrainer ?= no
 
 
 
@@ -62,6 +59,7 @@ create-ecs-cluster:
 	ParameterKey=InstanceTypesOverride,ParameterValue="$(InstanceTypesOverride)" \
 	ParameterKey=ASGAutoAssignPublicIp,ParameterValue="$(ASGAutoAssignPublicIp)" \
 	ParameterKey=SubnetIds,ParameterValue=$(SUBNET1)\\,$(SUBNET2)\\,$(SUBNET3)
+	@echo click "https://console.aws.amazon.com/cloudformation/home?region=$(REGION)#/stacks to see the details"
 	
 
 .PHONY: update-ecs-cluster	
@@ -86,7 +84,7 @@ update-ecs-cluster:
 get-ecs-cluster:
 	@aws --region $(REGION) cloudformation describe-stacks \
 	--stack-name  $(CLUSTER_STACK_NAME) \
-	--query "Stacks[0].Outputs" --output table
+	--query "Stacks[0].Outputs" --output json
 
 .PHONY: describe-ecs-cluster	
 describe-ecs-cluster: get-ecs-cluster	

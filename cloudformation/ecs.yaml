@@ -300,5 +300,25 @@ Resources:
         ECSAMI: !Ref ECSAMI
         
         
-        
-  
+    
+######################
+# Outputs
+######################
+Outputs:    
+  URL:
+    Value: !GetAtt MAIN.Outputs.LoadBalancerURL
+  # ErrorURL:
+  #   Value: !GetAtt MAIN.Outputs.PHPErrorURL
+  GreetingURL:
+    Value: !Sub "${MAIN.Outputs.LoadBalancerURL}/greeting.html"
+#   Description: LoadBalancer URL for the demo service
+
+
+
+  # PHPErrorURL:
+  #   Description: click this URL to increase 500 errors
+  #   Value:
+  #     !Sub
+  #       - 'http://${LBDNS}/error.php'
+  #       -
+  #         LBDNS: !GetAtt publicALB.DNSName
