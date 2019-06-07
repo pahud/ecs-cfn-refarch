@@ -1036,7 +1036,7 @@ Resources:
       AutoScalingRollingUpdate:
         MinInstancesInService: !Ref ASGDesiredCapacity
         MaxBatchSize: '1'
-        PauseTime: 'PT5M'
+        PauseTime: 'PT1M'
         
 
   ASG2:
@@ -1074,7 +1074,7 @@ Resources:
       AutoScalingRollingUpdate:
         MinInstancesInService: !Ref ASGDesiredCapacity2
         MaxBatchSize: '1'
-        PauseTime: 'PT5M'
+        PauseTime: 'PT1M'
 
   LCH:
     Type: AWS::AutoScaling::LifecycleHook

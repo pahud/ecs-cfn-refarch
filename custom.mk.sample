@@ -1,0 +1,16 @@
+# cloudformatoin stack name
+CLUSTER_STACK_NAME ?= ecsdemo
+# ecs cluster name
+CLUSTER_NAME ?= ecsdemo
+REGION ?= ap-northeast-1
+SSH_KEY_NAME ?= 'aws-pahud'
+VPC_ID ?= vpc-e549a281
+SUBNET1 ?= subnet-05b643f57a6997deb
+SUBNET2 ?= subnet-09e79eb1dec82b7e2
+SUBNET3 ?= subnet-0c365d97cbc75ceec
+OnDemandBaseCapacity ?= 0
+NodeAutoScalingGroupMinSize ?= 0
+NodeAutoScalingGroupDesiredSize ?= 2
+NodeAutoScalingGroupMaxSize ?= 5
+ASGAutoAssignPublicIp ?= yes
+InstanceTypesOverride ?= 't3.medium,t3.large,t3.xlarge'
