@@ -92,6 +92,8 @@ describe-ecs-cluster: get-ecs-cluster
 .PHONY: delete-ecs-cluster	
 delete-ecs-cluster:
 	@aws --region $(REGION) cloudformation delete-stack --stack-name "$(CLUSTER_STACK_NAME)"
+	@echo "deleting the stacks now."
+	@echo click "https://console.aws.amazon.com/cloudformation/home?region=$(REGION)#/stacks to make sure the stacks were deleted"
 
 clean:
 	echo "done"
