@@ -63,7 +63,7 @@ click the `URL` and you'll see the phpinfo page, wihch is served by ECS Tasks be
 
 
 
-If you cURL the `GreetingURL` , you'll get a static page containing credentials stored in SSM Parameter Store(i.e.`ECSYourName` and `ECSYourPassword`). The credentials were retrieved by ECS Execution Role from SSM Parameter on task bootstrapping and is injected into the environment variables.
+If you cURL the `GreetingURL` , you'll get a static page containing credentials stored in SSM Parameter Store(i.e.`ECSYourName` and `ECSYourPassword`). The credentials were retrieved by ECS Execution Role from SSM Parameter on task bootstrapping and is injected into the environment variables.([details](https://github.com/pahud/ecs-cfn-refarch/blob/91424203d946561c6098992d67cc41d87de9ee89/cloudformation/service.yaml#L1312-L1314))
 
 ```bash
 $ curl http://ecsdemo-MAIN-1M6ASY034M08X-alb-2131750000.ap-northeast-1.elb.amazonaws.com/greeting.html
