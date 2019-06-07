@@ -2,7 +2,7 @@
 
 This is an **Amazon EC2 Container Service** reference architecture with cloudformation templates that helps you provision a complete Amazon ECS environment with many advanced optional features.
 
-![](images/ecs-cfn-refarch.png)
+![](Images/ecs-cfn-refarch.png)
 
 
 
