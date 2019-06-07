@@ -79,6 +79,47 @@ $ curl http://ecsdemo-MAIN-1M6ASY034M08X-alb-2131750000.ap-northeast-1.elb.amazo
 <h2>Your password is DefaultPassword!</h2>
 ```
 
+# attributes
+By default, instances will have `instance-purchase-option` attributes either `ondemand` or `spot`([implementation detail](https://github.com/pahud/ecs-cfn-refarch/blob/10b19dd9edffcce3e5926182dad6c637c5f262ac/cloudformation/service.yaml#L1126-L1133)).
+
+For example, list all the instances with `instance-purchase-option=spot`:
+```bash
+$ aws ecs list-attributes --target-type container-instance  --region ap-northeast-1  --cluster ecsdemo-MAIN-IKGTIS1HXS9J-ecs-cluster --attribute-name instance-purchase-option --attribute-value spot
+{
+    "attributes": [
+        {
+            "targetId": "arn:aws:ecs:ap-northeast-1:903779448426:container-instance/22119ce6-bcfc-488d-ba8a-d005f2f6237f", 
+            "name": "instance-purchase-option", 
+            "value": "spot"
+        }, 
+        {
+            "targetId": "arn:aws:ecs:ap-northeast-1:903779448426:container-instance/0dbf6399-e51d-4fe7-a6b8-c86019d101bc", 
+            "name": "instance-purchase-option", 
+            "value": "spot"
+        }, 
+        {
+            "targetId": "arn:aws:ecs:ap-northeast-1:903779448426:container-instance/097bec0a-11c2-4c5a-8231-b82f387574ce", 
+            "name": "instance-purchase-option", 
+            "value": "spot"
+        }
+    ]
+}
+```
+
+Optionally, you may define your [task placement constraints](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-placement-constraints.html) to explicitly deploy
+ECS tasks on `ondemand` or `spot`.
+
+```json
+"placementConstraints": [
+    {
+        "expression": "attribute:instance-purchase-option == spot",
+        "type": "memberOf"
+    }
+]
+```
+
+This will give you better control over the taks placement based on the constraints expression.
+
 
 
 # clean up

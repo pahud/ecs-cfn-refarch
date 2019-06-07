@@ -132,7 +132,7 @@ Parameters:
   ASGMaxSize:
     Type: Number
     Description: max instance count under AutoScalingGroup
-    Default: 4
+    Default: 8
   ASGMinSize:
     Type: Number
     Description: min instance count under AutoScalingGroup
@@ -170,7 +170,7 @@ Parameters:
   ASGMaxSize2:
     Type: Number
     Description: max instance count under AutoScalingGroup
-    Default: 2
+    Default: 8
   ASGMinSize2:
     Type: Number
     Description: min instance count under AutoScalingGroup
@@ -580,6 +580,13 @@ Resources:
                 - "logs:PutLogEvents"
                 - "logs:DescribeLogStreams"
               Resource: "arn:aws:logs:*:*:*"
+        - PolicyName: ecs-describe-ec2-instances
+          PolicyDocument:
+            Statement:
+            - Effect: Allow
+              Action:
+                - "ec2:DescribeInstance*"
+              Resource: "*"  
 
   ECSServiceRole:
     Type: AWS::IAM::Role
@@ -1034,7 +1041,7 @@ Resources:
         PropagateAtLaunch: 'true'
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: !Ref ASGDesiredCapacity
+        MinInstancesInService: !Ref ASGMinSize
         MaxBatchSize: '1'
         PauseTime: 'PT1M'
         
@@ -1072,7 +1079,7 @@ Resources:
         PropagateAtLaunch: 'true'
     UpdatePolicy:
       AutoScalingRollingUpdate:
-        MinInstancesInService: !Ref ASGDesiredCapacity2
+        MinInstancesInService: !Ref ASGMinSize2
         MaxBatchSize: '1'
         PauseTime: 'PT1M'
 
@@ -1120,12 +1127,14 @@ Resources:
               --==BOUNDARY==
               Content-Type: text/x-shellscript; charset="us-ascii"
               #!/bin/bash
+              yum install -y awscli
+              
               echo ECS_CLUSTER=${AWS::StackName}-ecs-cluster >> /etc/ecs/ecs.config
               echo ECS_DISABLE_IMAGE_CLEANUP=false >> /etc/ecs/ecs.config
     
               iid=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
               export AWS_DEFAULT_REGION=${AWS::Region}
-              ilc=`aws ec2 describe-instances --instance-ids  $iid  --query 'Reservations[0].Instances[0].InstanceLifecycle' --output text`
+              ilc=$(aws ec2 describe-instances --instance-ids  $iid  --query 'Reservations[0].Instances[0].InstanceLifecycle' --output text)
               if [ "$ilc" == "spot" ]; then
                 echo ECS_INSTANCE_ATTRIBUTES='{"instance-purchase-option":"spot"}' >> /etc/ecs/ecs.config
               else
