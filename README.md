@@ -13,11 +13,23 @@ This is an **Amazon EC2 Container Service** reference architecture with cloudfor
 - [x] Using latest Amazon ECS AMI
 - [x] Built-in **service autoscaling** policies and **cluster autoscaling** policies
 
+# Prerequisite
+
+`ecs-cfn-refarch` will not generate the following resources for you. Make sure you have created them.
+
+- [x] A VPC with 3 public subnets
+- [x] A SSH key pair in EC2 console 
+
+
+
 # Usage
 
 create a `custom.mk` file and customize your parameters in this file
 
 ```bash
+# git clone the project
+$ git clone https://github.com/pahud/ecs-cfn-refarch.git
+$ cd ecs-cfn-refarch
 $ cp custom.mk.sample custom.mk
 $ vim custom.mk
 ```
