@@ -218,10 +218,10 @@ Parameters:
     Default: ""
   MaxPercent:
     Type: Number
-    Default: 100
+    Default: 200
   MinPercent:
     Type: Number
-    Default: 50
+    Default: 100
   ServiceDesiredCount:
     Type: Number
     Default: 2

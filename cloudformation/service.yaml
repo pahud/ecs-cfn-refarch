@@ -222,10 +222,10 @@ Parameters:
     Default: ""
   MaxPercent:
     Type: Number
-    Default: 100
+    Default: 200
   MinPercent:
     Type: Number
-    Default: 50
+    Default: 100
   ServiceDesiredCount:
     Type: Number
     Default: 2
@@ -934,6 +934,7 @@ Resources:
       Subnets:
         - !Select [0, !Ref SubnetIds]
         - !Select [1, !Ref SubnetIds]
+        - !Select [2, !Ref SubnetIds]
       Tags:
         -
           Key: Name
@@ -1035,6 +1036,18 @@ Resources:
       #   - !Ref TG
       VPCZoneIdentifier:
         !Ref SubnetIds
+      MetricsCollection:
+      - 
+        Granularity: "1Minute"
+        Metrics: 
+          - GroupMinSize
+          - GroupMaxSize
+          - GroupDesiredCapacity
+          - GroupInServiceInstances
+          - GroupPendingInstances
+          - GroupStandbyInstances
+          - GroupTerminatingInstances
+          - GroupTotalInstances
       Tags:
       - Key: Name
         Value: !Sub "${ECSDefaultCluster}-ASG-Node"
@@ -1411,7 +1424,7 @@ Resources:
       StepScalingPolicyConfiguration:
         AdjustmentType: PercentChangeInCapacity
         # AdjustmentType: ExactCapacity
-        Cooldown: 60
+        Cooldown: 30
         MetricAggregationType: Average
         StepAdjustments:
         - MetricIntervalLowerBound: 0
@@ -1424,32 +1437,42 @@ Resources:
   ECSscalingPolicyCpuUtil01:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: "[+]ServiceCPUUtilHigh"
-      PolicyType: StepScaling
+      PolicyName: "[o]ServiceCPUUtilTargetTracking"
+      PolicyType: TargetTrackingScaling
       ScalingTargetId: !Ref ECSscalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: PercentChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-        - MetricIntervalLowerBound: 0
-          ScalingAdjustment: 200
-        MinAdjustmentMagnitude: 2          
+      TargetTrackingScalingPolicyConfiguration:
+        # CustomizedMetricSpecification: 
+        #   CustomizedMetricSpecification
+        DisableScaleIn: false
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+          # ResourceLabel: !Sub "${publicALB.LoadBalancerFullName}/${publicALBTargetGroup.TargetGroupFullName}"
+        ScaleInCooldown: 30
+        ScaleOutCooldown: 30
+        TargetValue: 50    
+      # StepScalingPolicyConfiguration:
+      #   AdjustmentType: PercentChangeInCapacity
+      #   Cooldown: 30
+      #   MetricAggregationType: Average
+      #   StepAdjustments:
+      #   - MetricIntervalLowerBound: 0
+      #     ScalingAdjustment: 200
+      #   MinAdjustmentMagnitude: 2          
 
-  ECSscalingPolicyCpuUtil02:
-    Type: AWS::ApplicationAutoScaling::ScalingPolicy
-    Properties:
-      PolicyName: "[-]ServiceCPUUtilLow"
-      PolicyType: StepScaling
-      ScalingTargetId: !Ref ECSscalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: PercentChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-        - MetricIntervalUpperBound: 0
-          ScalingAdjustment: -50  
-        MinAdjustmentMagnitude: 2      
+  # ECSscalingPolicyCpuUtil02:
+  #   Type: AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: "[-]ServiceCPUUtilLow"
+  #     PolicyType: StepScaling
+  #     ScalingTargetId: !Ref ECSscalableTarget
+  #     StepScalingPolicyConfiguration:
+  #       AdjustmentType: ExactCapacity
+  #       Cooldown: 30
+  #       MetricAggregationType: Average
+  #       StepAdjustments:
+  #       - MetricIntervalUpperBound: 0
+  #         ScalingAdjustment: 1  
+  #       # MinAdjustmentMagnitude: 2       
 
 
 ######################
@@ -1458,33 +1481,61 @@ Resources:
   ECSscalingPolicyMemUtil01:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: "[+]ServiceMEMUtilHigh"
-      PolicyType: StepScaling
+      PolicyName: "[o]ServiceMEMUtilHigh"
+      PolicyType: TargetTrackingScaling
+      #PolicyType: StepScaling
       ScalingTargetId: !Ref ECSscalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: PercentChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-        - MetricIntervalLowerBound: 0
-          ScalingAdjustment: 200
-        MinAdjustmentMagnitude: 2          
+      TargetTrackingScalingPolicyConfiguration:
+        # CustomizedMetricSpecification: 
+        #   CustomizedMetricSpecification
+        DisableScaleIn: false
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization
+          # ResourceLabel: !Sub "${publicALB.LoadBalancerFullName}/${publicALBTargetGroup.TargetGroupFullName}"
+        ScaleInCooldown: 30
+        ScaleOutCooldown: 30
+        TargetValue: 50    
+      # StepScalingPolicyConfiguration:
+      #   AdjustmentType: PercentChangeInCapacity
+      #   Cooldown: 60
+      #   MetricAggregationType: Average
+      #   StepAdjustments:
+      #   - MetricIntervalLowerBound: 0
+      #     ScalingAdjustment: 200
+      #   MinAdjustmentMagnitude: 2          
 
-  ECSscalingPolicyMemUtil02:
+  # ECSscalingPolicyMemUtil02:
+  #   Type: AWS::ApplicationAutoScaling::ScalingPolicy
+  #   Properties:
+  #     PolicyName: "[-]ServiceMEMUtilLow"
+  #     PolicyType: StepScaling
+  #     ScalingTargetId: !Ref ECSscalableTarget
+  #     StepScalingPolicyConfiguration:
+  #       AdjustmentType: ExactCapacity
+  #       Cooldown: 30
+  #       MetricAggregationType: Average
+  #       StepAdjustments:
+  #       - MetricIntervalUpperBound: 0
+  #         ScalingAdjustment: 1  
+  #       # MinAdjustmentMagnitude: 2    
+
+
+  ECSscalingPolicyALBTargetTracking:
     Type: AWS::ApplicationAutoScaling::ScalingPolicy
     Properties:
-      PolicyName: "[-]ServiceMEMUtilLow"
-      PolicyType: StepScaling
+      PolicyName: "[o]ServiceALBTargetTracking"
+      PolicyType: TargetTrackingScaling
       ScalingTargetId: !Ref ECSscalableTarget
-      StepScalingPolicyConfiguration:
-        AdjustmentType: PercentChangeInCapacity
-        Cooldown: 60
-        MetricAggregationType: Average
-        StepAdjustments:
-        - MetricIntervalUpperBound: 0
-          ScalingAdjustment: -50  
-        MinAdjustmentMagnitude: 2    
-
+      TargetTrackingScalingPolicyConfiguration:
+        # CustomizedMetricSpecification: 
+        #   CustomizedMetricSpecification
+        DisableScaleIn: false
+        PredefinedMetricSpecification: 
+          PredefinedMetricType: ALBRequestCountPerTarget
+          ResourceLabel: !Sub "${publicALB.LoadBalancerFullName}/${publicALBTargetGroup.TargetGroupFullName}"
+        ScaleInCooldown: 30
+        ScaleOutCooldown: 30
+        TargetValue: 1000       
 
 ######################
 # Scaling Policies for Autoscaling Group
@@ -1494,6 +1545,7 @@ Resources:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
+      MinAdjustmentMagnitude: 2
       PolicyType: StepScaling
       # Cooldown: 60
       AutoScalingGroupName: !Ref ASGDefault
@@ -1507,6 +1559,7 @@ Resources:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
+      MinAdjustmentMagnitude: 2
       PolicyType: StepScaling
       # Cooldown: 60
       AutoScalingGroupName: !Ref ASGDefault
@@ -1521,6 +1574,7 @@ Resources:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties: 
       AdjustmentType: PercentChangeInCapacity
+      MinAdjustmentMagnitude: 2
       PolicyType: StepScaling
       # Cooldown: 60
       AutoScalingGroupName: !Ref ASGDefault
@@ -1688,23 +1742,23 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       MetricName: CPUUtilization
 
-  ServiceCPUUtilAlarmScaleIn:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      EvaluationPeriods: '120'
-      Statistic: Average
-      Threshold: '20'
-      AlarmDescription: Alarm if our ECS Service CPU Utilization is too low
-      Period: '60'
-      AlarmActions: [!Ref ECSscalingPolicyCpuUtil02]
-      Namespace: AWS/ECS
-      Dimensions:
-      - Name: ServiceName
-        Value: !GetAtt ECSService.Name
-      - Name: ClusterName
-        Value: !Ref ECSDefaultCluster
-      ComparisonOperator: LessThanOrEqualToThreshold
-      MetricName: CPUUtilization
+  # ServiceCPUUtilAlarmScaleIn:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     EvaluationPeriods: '120'
+  #     Statistic: Average
+  #     Threshold: '20'
+  #     AlarmDescription: Alarm if our ECS Service CPU Utilization is too low
+  #     Period: '60'
+  #     AlarmActions: [!Ref ECSscalingPolicyCpuUtil02]
+  #     Namespace: AWS/ECS
+  #     Dimensions:
+  #     - Name: ServiceName
+  #       Value: !GetAtt ECSService.Name
+  #     - Name: ClusterName
+  #       Value: !Ref ECSDefaultCluster
+  #     ComparisonOperator: LessThanOrEqualToThreshold
+  #     MetricName: CPUUtilization
 
   ServiceMEMUtilAlarmScaleOut:
     Type: AWS::CloudWatch::Alarm
@@ -1724,23 +1778,23 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       MetricName: MemoryUtilization
 
-  ServiceMEMUtilAlarmScaleIn:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      EvaluationPeriods: '120'
-      Statistic: Average
-      Threshold: '20'
-      AlarmDescription: Alarm if our ECS Service Memory Utilization is too low
-      Period: '60'
-      AlarmActions: [!Ref ECSscalingPolicyMemUtil02]
-      Namespace: AWS/ECS
-      Dimensions:
-      - Name: ServiceName
-        Value: !GetAtt ECSService.Name
-      - Name: ClusterName
-        Value: !Ref ECSDefaultCluster
-      ComparisonOperator: LessThanOrEqualToThreshold
-      MetricName: MemoryUtilization
+  # ServiceMEMUtilAlarmScaleIn:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties:
+  #     EvaluationPeriods: '120'
+  #     Statistic: Average
+  #     Threshold: '20'
+  #     AlarmDescription: Alarm if our ECS Service Memory Utilization is too low
+  #     Period: '60'
+  #     AlarmActions: [!Ref ECSscalingPolicyMemUtil02]
+  #     Namespace: AWS/ECS
+  #     Dimensions:
+  #     - Name: ServiceName
+  #       Value: !GetAtt ECSService.Name
+  #     - Name: ClusterName
+  #       Value: !Ref ECSDefaultCluster
+  #     ComparisonOperator: LessThanOrEqualToThreshold
+  #     MetricName: MemoryUtilization
 
 ######################
 #  CWE 
@@ -1829,6 +1883,42 @@ Resources:
       Description: String
       Type: String
       Value: !Ref EmptySNSTopic
+      
+######################
+# CloudWatch Alarm
+######################
+  # TargetTrackingALBAlarm:
+  #   Type: AWS::CloudWatch::Alarm
+  #   Properties: 
+  #     ActionsEnabled: true
+  #     # AlarmActions: 
+  #     #   - String
+  #     AlarmDescription: 'ALB TargetTracking Alarm'
+  #     AlarmName: !Sub 'TargetTracking-ALB-${AWS::StackName}'
+  #     ComparisonOperator: GreaterThanThreshold
+  #     DatapointsToAlarm: 1
+  #     Dimensions: 
+  #       - Name: LoadBalancer
+  #         Value: !Sub "${publicALB.LoadBalancerFullName}"
+  #       - Name: TargetGroup
+  #         Value: !Sub "${publicALBTargetGroup.TargetGroupFullName}"
+  #     # EvaluateLowSampleCountPercentile: String
+  #     EvaluationPeriods: 1
+  #     # ExtendedStatistic: String
+  #     # InsufficientDataActions: 
+  #     #   - String
+  #     MetricName: RequestCountPerTarget
+  #     # Metrics: 
+  #     #   - MetricDataQuery
+  #     Namespace: AWS/ApplicationELB
+  #     # OKActions: 
+  #     #   - String
+  #     Period: 60
+  #     Statistic: Sum
+  #     Threshold: 1000
+  #     TreatMissingData: missing
+  #     Unit: Count
+
 
 ######################
 # Outputs
