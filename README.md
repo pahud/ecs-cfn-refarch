@@ -92,7 +92,7 @@ $ curl http://ecsdemo-MAIN-1M6ASY034M08X-alb-2131750000.ap-northeast-1.elb.amazo
 ```
 
 # attributes
-By default, instances will have `instance-purchase-option` attributes either `ondemand` or `spot`([implementation detail](https://github.com/pahud/ecs-cfn-refarch/blob/10b19dd9edffcce3e5926182dad6c637c5f262ac/cloudformation/service.yaml#L1126-L1133)).
+By default, instances will have `instance-purchase-option` attributes either `ondemand` or `spot`([implementation detail](https://github.com/pahud/ecs-cfn-refarch/blob/96566d2e585f081bd5a4e281d64e9ff5f2acc6d1/cloudformation/service.yaml#L1135-L1142)).
 
 For example, list all the instances with `instance-purchase-option=spot`:
 ```bash
