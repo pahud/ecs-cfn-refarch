@@ -253,12 +253,22 @@ Parameters:
     Type: String
     #Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
-
+  EnableTaskStatsLogger:
+    Description: Enable ECS Task Stats Logger or not
+    Type: String
+    Default: "no"
+    AllowedValues:
+      - "yes"
+      - "no" 
   YamlBranch:
     Description: "stable or dev"
     Type: String
     Default: "stable"
     
+
+Conditions:
+  EnableTaskStatsLoggerCond: !Equals [ !Ref EnableTaskStatsLogger, "yes" ]     
+
 Resources:
   MAIN:
     Type: AWS::CloudFormation::Stack
@@ -298,9 +308,29 @@ Resources:
         S3BucketName: !Ref S3BucketName
         ParameterStoreYourName: !Ref ParameterStoreYourName
         ECSAMI: !Ref ECSAMI
+        RootStackName: !Ref AWS::StackName
         
-        
-    
+  SvcCustomMetricsLogger:
+    Condition: EnableTaskStatsLoggerCond
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-svc-custom-metrics-logger-${YamlBranch}.yaml"
+      Parameters:
+        ClusterName: !GetAtt MAIN.Outputs.ClusterName
+        ServiceName: !GetAtt MAIN.Outputs.ServiceName
+        LayerVersionArn: !GetAtt AWSCliLayer.Outputs.LayerVersionArn
+        RootStackName: !Ref AWS::StackName
+  
+  AWSCliLayer:
+    Condition: EnableTaskStatsLoggerCond
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/awscli-lambda-layer-${YamlBranch}.yaml"
+      # Parameters:
+      #   ClusterName: !GetAtt MAIN.Outputs.ClusterName
+      #   ServiceName: !GetAtt MAIN.Outputs.ServiceName
+      #   RootStackName: !Ref AWS::StackName
+  
 ######################
 # Outputs
 ######################

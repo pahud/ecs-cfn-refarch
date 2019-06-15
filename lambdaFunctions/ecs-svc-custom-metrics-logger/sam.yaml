@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Custom Metrics Logger for Amazon ECS Services
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: ecs-svc-custom-metrics-logger
+    Description: "custom metrics generator and logger for Amazon ECS"
+    Author: Pahud Hsieh
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
+    Labels: ['ecs','logger','stats','custom','cloudwatch','container']
+    HomePageUrl: https://github.com/pahud/ecs-cfn-refarch
+    SemanticVersion: 1.0.0-beta5
+    SourceCodeUrl: https://github.com/pahud/ecs-cfn-refarch
+    
+Parameters:
+  cluster:
+    Type: String
+  service:
+    Type: String
+  RootStackName:
+    Type: String
+    Default: ""
+  LayerVersionArn:
+    Type: String
+    Default: ""
+
+Conditions:
+    IsRootStackNameUndefined: !Equals [ !Ref RootStackName, "" ]
+    IsLayerVersionArnUnProvided: !Equals [ !Ref LayerVersionArn, "" ]
+    
+Resources:
+  awscliLayer:
+    Condition: IsLayerVersionArnUnProvided
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:903779448426:applications/lambda-layer-awscli
+        SemanticVersion: 1.16.175
+
+  Func:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: main
+      CodeUri: ./func.d
+      Runtime: provided
+      Layers:
+        - !If
+          - IsLayerVersionArnUnProvided
+          - !GetAtt awscliLayer.Outputs.LayerVersionArn
+          - !Ref LayerVersionArn
+      MemorySize: 128
+      Environment:
+        Variables:
+          MY_AWS_REGION:
+            Ref: AWS::Region
+          cluster: !Ref cluster
+          service: !Ref service
+      Role:
+        Fn::Sub: ${MyLambdaRole.Arn}
+      Timeout: 10
+      Events:
+        CWE:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 minute)
+  MyLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Path: /
+      Policies:
+      - PolicyName: Root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecs:Describe*
+            - cloudwatch:PutMetricData
+            Resource: '*'
+      RoleName:
+        !If
+            - IsRootStackNameUndefined
+            - !Sub "${AWS::StackName}"
+            - !Sub "${RootStackName}-ecs-task-stats-logger"
+       
+Outputs:
+  LambdaFuncArn:
+    Description: Lambda Function Arn
+    Value:
+      Fn::GetAtt:
+      - Func
+      - Arn

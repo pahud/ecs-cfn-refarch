@@ -9,6 +9,10 @@ Mappings:
       web: m4.large
 
 Parameters:
+  RootStackName:
+    Type: String
+    Default: ""
+    
   SshKeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: Name of an existing EC2 KeyPair to enable SSH access to the ECS instances.
@@ -255,6 +259,7 @@ Parameters:
     Description: AMI ID
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
+   
 
 
 Conditions:
@@ -264,8 +269,6 @@ Conditions:
   UseELBCond: !Equals [ !Ref UseALB, "no" ] 
   UseBuiltInTaskDefinitionCond: !Equals [ !Ref UseBuiltInTaskDefinition, "yes" ]
   ECSLambdaDrainCond: !Not [ !Equals [ !Ref S3BucketName, "" ] ]
-  # EmptyTag: !Equals [ !Ref Tag, "" ]
-  # NotEmptyTag: !Not [ !Equals [ !Ref Tag, "" ] ]
 
 
 Resources:
@@ -580,10 +583,10 @@ Resources:
       GroupDescription: "sg for LoadBalancer"
       VpcId: !Ref VpcId
       
-  NodeSecurityGroup:
+  SgEC2:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupName: "sg for ec2"
+      GroupName: !Sub "${AWS::StackName}-sgEc2"
       GroupDescription: "sg for ec2"
       VpcId: !Ref VpcId
 
@@ -608,7 +611,7 @@ Resources:
   ingress3:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      GroupId: !Ref NodeSecurityGroup
+      GroupId: !Ref SgEC2
       SourceSecurityGroupId: !Ref SgLB
       IpProtocol: tcp
       FromPort: 0
@@ -823,7 +826,7 @@ Resources:
       LaunchTemplateName: !Sub "eksLaunchTemplate-${AWS::StackName}"
       LaunchTemplateData: 
         # SecurityGroupIds: 
-        #   - !Ref NodeSecurityGroup
+        #   - !Ref SgEC2
         TagSpecifications: 
           -
             ResourceType: instance
@@ -953,12 +956,12 @@ Resources:
                 - 'false'
             SubnetId: !Select [0, !Ref SubnetIds]
             Groups: 
-              - !Ref NodeSecurityGroup
+              - !Ref SgEC2
               # !If
               #   - CreateNewNodeSG
               #   - 
-              #     - !Ref NodeSecurityGroup
-              #   - !Split [ ",", !Ref ExistingNodeSecurityGroups ]
+              #     - !Ref SgEC2
+              #   - !Split [ ",", !Ref ExistingSgEC2s ]
         ImageId: !Ref ECSAMI
           # !If
           #   - PreferredDefaultAMI
@@ -1017,8 +1020,12 @@ Resources:
                 Name: SERVICE_ENV
                 Value: prod
             Secrets:
-               - { Name: "ECSYourName", ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECSYourName-${AWS::StackName}" }
-               - { Name: "ECSYourPassword", ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECSYourPassword-${AWS::StackName}" }
+              -
+                Name: ECSYourName
+                ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECSYourName-${AWS::StackName}"
+              -
+                Name: ECSYourPassword
+                ValueFrom: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ECSYourPassword-${AWS::StackName}"
 
             MountPoints:
               -
@@ -1638,5 +1645,11 @@ Outputs:
     
   DockerImage:
     Value: !Ref CaddyImage
+  
+  ClusterName:
+    Value: !Ref ECSDefaultCluster
+  
+  ServiceName:
+    Value: !GetAtt ECSService.Name
 
 

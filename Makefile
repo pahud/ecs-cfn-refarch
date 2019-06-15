@@ -24,6 +24,7 @@ NodeAutoScalingGroupDesiredSize ?= 2
 NodeAutoScalingGroupMaxSize ?= 5
 ASGAutoAssignPublicIp ?= yes
 InstanceTypesOverride ?= 't3.medium,t3.large,t3.xlarge'
+EnableTaskStatsLogger ?= no
 
 
 
@@ -37,11 +38,16 @@ InstanceTypesOverride ?= 't3.medium,t3.large,t3.xlarge'
 update-stable-yaml:
 	@aws --region us-west-2 s3 cp cloudformation/ecs.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-stable.yaml --acl public-read
 	@aws --region us-west-2 s3 cp cloudformation/service.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/service-stable.yaml --acl public-read
+	@aws --region us-west-2 s3 cp cloudformation/ecs-svc-custom-metrics-logger.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-svc-custom-metrics-logger-stable.yaml --acl public-read
+	@aws --region us-west-2 s3 cp cloudformation/awscli-lambda-layer.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/awscli-lambda-layer-stable.yaml  --acl public-read
 
 .PHONY: update-dev-yaml	
 update-dev-yaml: 
 	@aws --region us-west-2 s3 cp cloudformation/ecs.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-dev.yaml --acl public-read
 	@aws --region us-west-2 s3 cp cloudformation/service.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/service-dev.yaml --acl public-read
+	@aws --region us-west-2 s3 cp cloudformation/ecs-svc-custom-metrics-logger.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-svc-custom-metrics-logger-dev.yaml --acl public-read
+	@aws --region us-west-2 s3 cp cloudformation/awscli-lambda-layer.yaml s3://pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/awscli-lambda-layer-dev.yaml  --acl public-read
+
 
 .PHONY: create-cluster
 create-ecs-cluster:
@@ -50,6 +56,7 @@ create-ecs-cluster:
 	--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
 	--parameters \
 	ParameterKey=YamlBranch,ParameterValue="$(YAML_BRANCH)" \
+	ParameterKey=EnableTaskStatsLogger,ParameterValue="$(EnableTaskStatsLogger)" \
 	ParameterKey=VpcId,ParameterValue="$(VPC_ID)" \
 	ParameterKey=SshKeyName,ParameterValue="$(SSH_KEY_NAME)" \
 	ParameterKey=OnDemandBaseCapacity,ParameterValue="$(OnDemandBaseCapacity)" \
@@ -69,6 +76,7 @@ update-ecs-cluster:
 	--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
 	--parameters \
 	ParameterKey=YamlBranch,ParameterValue="$(YAML_BRANCH)" \
+	ParameterKey=EnableTaskStatsLogger,ParameterValue="$(EnableTaskStatsLogger)" \
 	ParameterKey=VpcId,ParameterValue="$(VPC_ID)" \
 	ParameterKey=SshKeyName,ParameterValue="$(SSH_KEY_NAME)" \
 	ParameterKey=OnDemandBaseCapacity,ParameterValue="$(OnDemandBaseCapacity)" \

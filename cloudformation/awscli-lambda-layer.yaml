@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+# Parameters:
+#   ClusterName:
+#     Type: String
+#   ServiceName:
+#     Type: String
+#   RootStackName:
+#     Type: String
+#     Default: ""
+
+Transform: AWS::Serverless-2016-10-31
+Description: Amazon ECS task stats logger
+Resources:
+  awscliLayer:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:us-east-1:903779448426:applications/lambda-layer-awscli
+        SemanticVersion: 1.16.175
+
+Outputs:
+  LayerVersionArn:
+    Description: AWS CLI Layer ARN
+    # Value: !GetAtt ConfigMapUpdate.Outputs.LambdaFuncArn	
+    Value: !GetAtt awscliLayer.Outputs.LayerVersionArn
+    
+#   LambdaFuncName:
+#     Description: Lambda Func Name
+#     Value: !Ref FunctionName
+
+
+      
+      

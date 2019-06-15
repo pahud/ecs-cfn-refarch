@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  ClusterName:
+    Type: String
+  ServiceName:
+    Type: String
+  RootStackName:
+    Type: String
+    Default: ""
+  LayerVersionArn:
+    Type: String
+    Default: ""
+
+Transform: AWS::Serverless-2016-10-31
+Description: Amazon ECS service stats logger
+Resources:
+  StatsLoggerFunc:
+    Type: AWS::Serverless::Application
+    Properties:
+      Location:
+        ApplicationId: arn:aws:serverlessrepo:ap-northeast-1:903779448426:applications/ecs-svc-custom-metrics-logger
+        SemanticVersion: 1.0.0-beta5
+      Parameters:
+        cluster: !Ref ClusterName
+        service: !Ref ServiceName
+        RootStackName: !Ref RootStackName
+        LayerVersionArn: !Ref LayerVersionArn
+
+# Outputs:
+#   LambdaFuncArn:
+#     Description: Lambda Func ARN
+#     Value: !GetAtt ConfigMapUpdate.Outputs.LambdaFuncArn	
+    
+#   LambdaFuncName:
+#     Description: Lambda Func Name
+#     Value: !Ref FunctionName
+
+
+      
+      
