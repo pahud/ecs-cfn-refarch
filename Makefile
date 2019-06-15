@@ -24,7 +24,7 @@ NodeAutoScalingGroupDesiredSize ?= 2
 NodeAutoScalingGroupMaxSize ?= 5
 ASGAutoAssignPublicIp ?= yes
 InstanceTypesOverride ?= 't3.medium,t3.large,t3.xlarge'
-EnableTaskStatsLogger ?= no
+EnableEcsSvcCustomMetricsLogger ?= no
 
 
 
@@ -56,7 +56,7 @@ create-ecs-cluster:
 	--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
 	--parameters \
 	ParameterKey=YamlBranch,ParameterValue="$(YAML_BRANCH)" \
-	ParameterKey=EnableTaskStatsLogger,ParameterValue="$(EnableTaskStatsLogger)" \
+	ParameterKey=EnableEcsSvcCustomMetricsLogger,ParameterValue="$(EnableEcsSvcCustomMetricsLogger)" \
 	ParameterKey=VpcId,ParameterValue="$(VPC_ID)" \
 	ParameterKey=SshKeyName,ParameterValue="$(SSH_KEY_NAME)" \
 	ParameterKey=OnDemandBaseCapacity,ParameterValue="$(OnDemandBaseCapacity)" \
@@ -76,7 +76,7 @@ update-ecs-cluster:
 	--capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM CAPABILITY_AUTO_EXPAND \
 	--parameters \
 	ParameterKey=YamlBranch,ParameterValue="$(YAML_BRANCH)" \
-	ParameterKey=EnableTaskStatsLogger,ParameterValue="$(EnableTaskStatsLogger)" \
+	ParameterKey=EnableEcsSvcCustomMetricsLogger,ParameterValue="$(EnableEcsSvcCustomMetricsLogger)" \
 	ParameterKey=VpcId,ParameterValue="$(VPC_ID)" \
 	ParameterKey=SshKeyName,ParameterValue="$(SSH_KEY_NAME)" \
 	ParameterKey=OnDemandBaseCapacity,ParameterValue="$(OnDemandBaseCapacity)" \

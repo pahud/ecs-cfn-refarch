@@ -253,8 +253,8 @@ Parameters:
     Type: String
     #Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/ecs/optimized-ami/amazon-linux-2/recommended/image_id
-  EnableTaskStatsLogger:
-    Description: Enable ECS Task Stats Logger or not
+  EnableEcsSvcCustomMetricsLogger:
+    Description: Enable ECS Custom Metrics Logger or not
     Type: String
     Default: "no"
     AllowedValues:
@@ -267,7 +267,7 @@ Parameters:
     
 
 Conditions:
-  EnableTaskStatsLoggerCond: !Equals [ !Ref EnableTaskStatsLogger, "yes" ]     
+  EnableEcsSvcCustomMetricsLoggerCond: !Equals [ !Ref EnableEcsSvcCustomMetricsLogger, "yes" ]     
 
 Resources:
   MAIN:
@@ -311,7 +311,7 @@ Resources:
         RootStackName: !Ref AWS::StackName
         
   SvcCustomMetricsLogger:
-    Condition: EnableTaskStatsLoggerCond
+    Condition: EnableEcsSvcCustomMetricsLoggerCond
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/ecs-svc-custom-metrics-logger-${YamlBranch}.yaml"
@@ -322,7 +322,7 @@ Resources:
         RootStackName: !Ref AWS::StackName
   
   AWSCliLayer:
-    Condition: EnableTaskStatsLoggerCond
+    Condition: EnableEcsSvcCustomMetricsLoggerCond
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "https://s3-us-west-2.amazonaws.com/pahud-cfn-us-west-2/ecs-cfn-refarch/cloudformation/awscli-lambda-layer-${YamlBranch}.yaml"
