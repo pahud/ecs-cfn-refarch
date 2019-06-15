@@ -6,7 +6,7 @@ At this moment, we support number of `Desired` tasks and number of `Running` tas
 
 # Enable this feature with ecs-cfn-refarch
 
-This is an optional stack for `ecs-cfn-refarch`(see [here](https://github.com/pahud/ecs-cfn-refarch/blob/0888b6898362e289434f5d02308a6551fad0fe4e/cloudformation/ecs.yaml#L313-L322)). To enable this support, simply pass `EnableEcsSvcCustomMetricsLogger=yes` to the `make` command
+This is an optional stack for `ecs-cfn-refarch`(see [here](https://github.com/pahud/ecs-cfn-refarch/blob/0accf60b1c1a3080467c7bfa0da623a6523afcf2/cloudformation/ecs.yaml#L313-L322)). To enable this support, simply pass `EnableEcsSvcCustomMetricsLogger=yes` to the `make` command
 
 ```bash
 # enable the ecs-svc-custom-metrics-logger plugin
