@@ -12,6 +12,7 @@ This is an **Amazon EC2 Container Service** reference architecture with cloudfor
 - [x] Secrets saved in SSM **Parameter Store**
 - [x] Using latest Amazon ECS AMI
 - [x] Built-in **service autoscaling** policies and **cluster autoscaling** policies
+- [x] Support [ECS Service Custom Metrics Logger](https://github.com/pahud/ecs-cfn-refarch/tree/master/lambdaFunctions/ecs-svc-custom-metrics-logger) as a plug-in to automatically generate some missing metrics
 
 # Prerequisite
 
