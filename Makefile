@@ -86,6 +86,7 @@ update-ecs-cluster:
 	ParameterKey=InstanceTypesOverride,ParameterValue="$(InstanceTypesOverride)" \
 	ParameterKey=ASGAutoAssignPublicIp,ParameterValue="$(ASGAutoAssignPublicIp)" \
 	ParameterKey=SubnetIds,ParameterValue=$(SUBNET1)\\,$(SUBNET2)\\,$(SUBNET3)
+	@echo click "https://console.aws.amazon.com/cloudformation/home?region=$(REGION)#/stacks to see the details"
 	
 
 .PHONY: get-ecs-cluster	

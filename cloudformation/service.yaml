@@ -423,7 +423,8 @@ Resources:
                     - ec2.amazonaws.com
         Path: /
         ManagedPolicyArns:
-            - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role'    
+            - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role'   
+            - 'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM'
         Policies:
         - PolicyName: ecs-instance-create-tag
           PolicyDocument:
@@ -755,6 +756,12 @@ Resources:
       - Key: Name
         Value: !Sub "${ECSDefaultCluster}-ASG-Node"
         PropagateAtLaunch: 'true'
+      - Key: ECS
+        Value: 1
+        PropagateAtLaunch: 'true'
+      - Key: Patch Group
+        Value: AmazonLinux2ECSNodes
+        PropagateAtLaunch: 'true'
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: !Ref ASGMinSize
@@ -793,6 +800,12 @@ Resources:
       - Key: Name
         Value: !Sub "${ECSDefaultCluster}-ASG2-Node"
         PropagateAtLaunch: 'true'
+      - Key: ECS
+        Value: 1
+        PropagateAtLaunch: 'true'
+      - Key: Patch Group
+        Value: AmazonLinux2ECSNodes
+        PropagateAtLaunch: 'true'
     UpdatePolicy:
       AutoScalingRollingUpdate:
         MinInstancesInService: !Ref ASGMinSize2
@@ -823,7 +836,7 @@ Resources:
   MyLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: !Sub "eksLaunchTemplate-${AWS::StackName}"
+      LaunchTemplateName: !Sub "ecsLaunchTemplate-${AWS::StackName}"
       LaunchTemplateData: 
         # SecurityGroupIds: 
         #   - !Ref SgEC2
@@ -843,7 +856,9 @@ Resources:
               --==BOUNDARY==
               Content-Type: text/x-shellscript; charset="us-ascii"
               #!/bin/bash
-              yum install -y awscli
+              yum install -y awscli amazon-ssm-agent
+              # starting the ssm-agent
+              systemctl start amazon-ssm-agent
               
               echo ECS_CLUSTER=${AWS::StackName}-ecs-cluster >> /etc/ecs/ecs.config
               echo ECS_DISABLE_IMAGE_CLEANUP=false >> /etc/ecs/ecs.config
