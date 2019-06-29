@@ -18,6 +18,7 @@ VPC_ID ?= vpc-e549a281
 SUBNET1 ?= subnet-05b643f57a6997deb
 SUBNET2 ?= subnet-09e79eb1dec82b7e2
 SUBNET3 ?= subnet-0c365d97cbc75ceec
+ExtraSG ?= ''
 OnDemandBaseCapacity ?= 0
 NodeAutoScalingGroupMinSize ?= 0
 NodeAutoScalingGroupDesiredSize ?= 2
@@ -59,6 +60,7 @@ create-ecs-cluster:
 	ParameterKey=EnableEcsSvcCustomMetricsLogger,ParameterValue="$(EnableEcsSvcCustomMetricsLogger)" \
 	ParameterKey=VpcId,ParameterValue="$(VPC_ID)" \
 	ParameterKey=SshKeyName,ParameterValue="$(SSH_KEY_NAME)" \
+	ParameterKey=ExtraSG,ParameterValue="$(ExtraSG)" \
 	ParameterKey=OnDemandBaseCapacity,ParameterValue="$(OnDemandBaseCapacity)" \
 	ParameterKey=ASGMinSize,ParameterValue="$(NodeAutoScalingGroupMinSize)" \
 	ParameterKey=ASGDesiredCapacity,ParameterValue="$(NodeAutoScalingGroupDesiredSize)" \
@@ -79,6 +81,7 @@ update-ecs-cluster:
 	ParameterKey=EnableEcsSvcCustomMetricsLogger,ParameterValue="$(EnableEcsSvcCustomMetricsLogger)" \
 	ParameterKey=VpcId,ParameterValue="$(VPC_ID)" \
 	ParameterKey=SshKeyName,ParameterValue="$(SSH_KEY_NAME)" \
+	ParameterKey=ExtraSG,ParameterValue="$(ExtraSG)" \
 	ParameterKey=OnDemandBaseCapacity,ParameterValue="$(OnDemandBaseCapacity)" \
 	ParameterKey=ASGMinSize,ParameterValue="$(NodeAutoScalingGroupMinSize)" \
 	ParameterKey=ASGDesiredCapacity,ParameterValue="$(NodeAutoScalingGroupDesiredSize)" \

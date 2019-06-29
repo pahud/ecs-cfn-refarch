@@ -17,6 +17,11 @@ Parameters:
     Description: Select 3 subnets where workers can be created.
     Type: String
 
+  ExtraSG:
+    Type: String
+    Description: Additional Security Group for EC2 
+    Default: ""
+
   NodeInstanceType:
     Description: Default EC2 instance type for the node instances.
     Type: String
@@ -278,6 +283,7 @@ Resources:
         SshKeyName: !Ref SshKeyName
         VpcId: !Ref VpcId
         SubnetIds: !Ref SubnetIds
+        ExtraSG: !Ref ExtraSG
         NodeInstanceType: !Ref NodeInstanceType
         CaddyImage: !Ref CaddyImage
         ASGDesiredCapacity: !Ref ASGDesiredCapacity

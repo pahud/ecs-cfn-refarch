@@ -24,6 +24,11 @@ Parameters:
   SubnetIds:
     Description: Select 3 subnets where workers can be created.
     Type: List<AWS::EC2::Subnet::Id>
+    
+  ExtraSG:
+    Type: String
+    Description: Additional Security Group for EC2 
+    Default: ""
 
   NodeInstanceType:
     Description: Default EC2 instance type for the node instances.
@@ -269,7 +274,7 @@ Conditions:
   UseELBCond: !Equals [ !Ref UseALB, "no" ] 
   UseBuiltInTaskDefinitionCond: !Equals [ !Ref UseBuiltInTaskDefinition, "yes" ]
   ECSLambdaDrainCond: !Not [ !Equals [ !Ref S3BucketName, "" ] ]
-
+  HasExtraSG: !Not [ !Equals [!Ref ExtraSG, ""]]
 
 Resources:
   ParameterYourName:
@@ -856,7 +861,7 @@ Resources:
               --==BOUNDARY==
               Content-Type: text/x-shellscript; charset="us-ascii"
               #!/bin/bash
-              yum install -y awscli amazon-ssm-agent
+              yum install -y awscli amazon-ssm-agent ec2-instance-connect
               # starting the ssm-agent
               systemctl start amazon-ssm-agent
               
@@ -972,6 +977,11 @@ Resources:
             SubnetId: !Select [0, !Ref SubnetIds]
             Groups: 
               - !Ref SgEC2
+              -
+                !If
+                  - HasExtraSG
+                  - !Ref ExtraSG
+                  - AWS::NoValue
               # !If
               #   - CreateNewNodeSG
               #   - 
