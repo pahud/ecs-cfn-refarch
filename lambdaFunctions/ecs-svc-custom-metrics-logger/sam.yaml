@@ -11,7 +11,7 @@ Metadata:
     ReadmeUrl: README.md
     Labels: ['ecs','logger','stats','custom','cloudwatch','container']
     HomePageUrl: https://github.com/pahud/ecs-cfn-refarch
-    SemanticVersion: 1.0.0-beta5
+    SemanticVersion: 1.0.0-beta6
     SourceCodeUrl: https://github.com/pahud/ecs-cfn-refarch
     
 Parameters:
@@ -50,7 +50,7 @@ Resources:
           - IsLayerVersionArnUnProvided
           - !GetAtt awscliLayer.Outputs.LayerVersionArn
           - !Ref LayerVersionArn
-      MemorySize: 128
+      MemorySize: 512
       Environment:
         Variables:
           MY_AWS_REGION:
